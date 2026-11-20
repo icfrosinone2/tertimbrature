@@ -1,0 +1,2863 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestione Presenze Personale ATA - I.C. 2° Frosinone</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #d9e1f2;
+      color: #111;
+      font-size: 13px;
+    }
+    .hidden { display: none !important; }
+
+    /* Top bar */
+    .topbar {
+      background: #1f4e78;
+      color: #fff;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .topbar h1 { font-size: 15px; font-weight: bold; letter-spacing: 0.3px; }
+    .topbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-top {
+      background: #fff;
+      color: #1f4e78;
+      border: 1px solid #16365c;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-top:hover { background: #e8eef5; }
+    .btn-top.btn-warn { background: #ffd966; color: #000; border-color: #7f6000; }
+    .btn-top.btn-warn:hover { background: #ffe699; }
+    .btn-top.btn-danger { background: #f4cccc; color: #990000; border-color: #990000; }
+    .btn-top.btn-danger:hover { background: #ea9999; }
+
+    /* VISTA 1: INDICE */
+    .indice-wrapper {
+      padding: 12px;
+      max-width: 1480px;
+      margin: 0 auto;
+    }
+    .indice-header {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr 1fr;
+      border: 2px solid #000;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    .indice-header div {
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .ih-left { background: #66ff66; font-size: 14px; border-right: 2px solid #000; }
+    .ih-center { background: #ffff66; font-size: 16px; border-right: 2px solid #000; }
+    .ih-right { background: #66ff66; font-size: 12px; }
+
+    .editable-banner-inp {
+      width: 100%;
+      border: 1px dashed transparent;
+      background: transparent;
+      text-align: center;
+      font-weight: inherit;
+      font-size: inherit;
+      color: inherit;
+      padding: 2px 4px;
+    }
+    .editable-banner-inp:hover, .editable-banner-inp:focus {
+      background: rgba(255,255,255,0.65);
+      border-color: #000;
+      outline: none;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+      background: #fff;
+      padding: 8px 12px;
+      border: 1px solid #7f7f7f;
+      border-radius: 4px;
+      flex-wrap: wrap;
+    }
+    .search-bar input {
+      flex: 1;
+      min-width: 200px;
+      padding: 6px 10px;
+      border: 1px solid #999;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+    .btn-add {
+      background: #2e75b6;
+      color: #fff;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-add:hover { background: #1f4e78; }
+
+    .indice-grid {
+      display: grid;
+      grid-template-columns: 1fr 200px 1fr 250px;
+      gap: 10px;
+      align-items: start;
+    }
+    @media (max-width: 1200px) {
+      .indice-grid { grid-template-columns: 1fr; }
+    }
+
+    table.emp-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 2px solid #000;
+    }
+    table.emp-table th {
+      background: #9bc2e6;
+      border: 1px solid #000;
+      padding: 6px 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    table.emp-table td {
+      border: 1px solid #000;
+      padding: 2px 4px;
+      height: 30px;
+    }
+    .col-num { width: 28px; text-align: center; background: #fff2cc; font-weight: bold; }
+    .col-name { background: #f8cbad; font-weight: bold; font-size: 13px; }
+    .col-qual { background: #a9d08e; font-size: 11px; font-weight: bold; width: 115px; }
+    .col-btn { background: #2f5597; text-align: center; width: 125px; }
+    .col-del { background: #ededed; text-align: center; width: 32px; }
+
+    .cell-edit-inp {
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      font-weight: inherit;
+      font-size: inherit;
+      font-family: inherit;
+      color: #000;
+      padding: 2px 3px;
+    }
+    .cell-edit-inp:hover, .cell-edit-inp:focus {
+      background: #fff;
+      border-color: #1f4e78;
+      outline: none;
+    }
+
+    .emp-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: #fff;
+      border: 1px solid #333;
+      border-radius: 3px;
+      padding: 2px 5px;
+      font-weight: bold;
+      font-size: 11px;
+      cursor: pointer;
+      box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    .emp-btn:hover { background: #ffe699; }
+    .home-icon {
+      background: #c00000;
+      color: #fff;
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-size: 11px;
+      margin-left: 4px;
+    }
+    .btn-del-emp {
+      background: #c00000;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .btn-del-emp:hover { background: #800000; }
+
+    .center-box {
+      background: #66ff33;
+      border: 2px solid #000;
+      padding: 14px 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .school-badge {
+      background: #fff;
+      border: 2px solid #2f5597;
+      border-radius: 8px;
+      padding: 10px 6px;
+      width: 100%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+    .school-badge .icon-school { font-size: 34px; display: block; margin-bottom: 4px; }
+    .school-badge .title-school { font-weight: bold; color: #1f4e78; font-size: 11px; }
+    .foglio-vuoto-box {
+      font-weight: bold;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #000;
+      padding: 8px;
+    }
+    .ata-badge {
+      background: #fff;
+      border: 2px dashed #c00000;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #c00000;
+      font-size: 12px;
+    }
+
+    .totals-panel {
+      background: #00b0f0;
+      border: 2px solid #000;
+      padding: 8px;
+    }
+    .totals-title {
+      background: #fff;
+      border: 1px solid #000;
+      text-align: center;
+      font-weight: bold;
+      padding: 5px;
+      margin-bottom: 8px;
+    }
+    .total-row {
+      display: grid;
+      grid-template-columns: 1fr 70px;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    .total-label {
+      background: #ffff00;
+      border: 1px solid #000;
+      padding: 3px 6px;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .total-val {
+      background: #2f5597;
+      color: #fff;
+      border: 1px solid #000;
+      padding: 3px 6px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .extra-box {
+      margin-top: 10px;
+      border: 1px solid #000;
+      background: #00b0f0;
+      text-align: center;
+    }
+    .extra-box .extra-lbl { font-weight: bold; padding: 4px; font-size: 12px; }
+    .extra-box .extra-val {
+      background: #2f5597;
+      color: #fff;
+      font-weight: bold;
+      padding: 6px;
+      margin: 0 8px 8px 8px;
+      border: 1px solid #000;
+    }
+
+    /* VISTA 2: SCHEDA INDIVIDUALE */
+    .scheda-wrapper {
+      background: #1a33cc;
+      min-height: calc(100vh - 42px);
+      padding: 16px;
+      color: #000;
+    }
+    .scheda-container {
+      max-width: 1150px;
+      margin: 0 auto;
+    }
+    .scheda-banner {
+      background: #bf8f00;
+      border: 2px solid #000;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 8px;
+      letter-spacing: 1px;
+    }
+    .scheda-subbanner {
+      text-align: center;
+      font-weight: bold;
+      color: #000;
+      background: #4472c4;
+      padding: 4px;
+      font-size: 12px;
+      border-left: 2px solid #000;
+      border-right: 2px solid #000;
+    }
+    .scheda-top-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+    .year-box {
+      display: flex;
+      border: 2px solid #000;
+      background: #d9e1f2;
+    }
+    .year-box input {
+      width: 65px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 15px;
+      border: none;
+      border-right: 1px solid #000;
+      padding: 6px;
+      background: #d9e1f2;
+      color: #000080;
+    }
+    .year-box input:last-child { border-right: none; }
+    .btn-indice-big {
+      background: linear-gradient(to bottom, #f4b084, #c55a11);
+      border: 2px solid #000;
+      border-radius: 6px;
+      padding: 6px 18px;
+      font-size: 18px;
+      font-weight: bold;
+      font-style: italic;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+    }
+    .btn-indice-big:hover { filter: brightness(1.08); }
+
+    .scheda-body {
+      display: grid;
+      grid-template-columns: 160px 1.2fr 1fr;
+      gap: 20px;
+      align-items: start;
+      margin-top: 10px;
+    }
+    @media (max-width: 950px) {
+      .scheda-body { grid-template-columns: 1fr; }
+    }
+
+    .profilo-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+    }
+    .profilo-table td {
+      border: 1px solid #000;
+      padding: 4px 8px;
+      font-weight: bold;
+    }
+    .p-title { background: #33cccc; font-style: italic; font-size: 11px; width: 110px; }
+    .p-sub { background: #92d050; font-style: italic; font-size: 11px; }
+    .p-val { background: #9bc2e6; text-align: center; }
+    .p-val input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 185px 1fr;
+      margin-bottom: 10px;
+      border: 1px solid #000;
+    }
+    .field-lbl {
+      background: #c55a11;
+      color: #000;
+      font-weight: bold;
+      font-style: italic;
+      padding: 6px 10px;
+      border-right: 1px solid #000;
+    }
+    .field-inp {
+      background: #d9e29b;
+      padding: 4px 8px;
+    }
+    .field-inp input, .field-inp select {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-weight: bold;
+      font-size: 14px;
+      color: #000;
+    }
+
+    .months-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+    }
+    .month-btn {
+      border: 2px solid #000;
+      border-radius: 4px;
+      padding: 7px 10px;
+      font-size: 16px;
+      font-weight: bold;
+      font-style: italic;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 2px 3px 5px rgba(0,0,0,0.45);
+      transition: transform 0.1s;
+    }
+    .month-btn:hover { transform: scale(1.03); filter: brightness(1.1); }
+    .m-set { background: linear-gradient(to bottom, #e06666, #990000); color: #000; }
+    .m-ott { background: linear-gradient(to bottom, #ffd966, #bf9000); color: #000; }
+    .m-nov { background: linear-gradient(to bottom, #a9d08e, #548235); color: #000; }
+    .m-dic { background: linear-gradient(to bottom, #45818e, #134f5c); color: #000; }
+    .m-gen { background: linear-gradient(to bottom, #b4a7d6, #674ea7); color: #000; }
+    .m-feb { background: linear-gradient(to bottom, #ea9999, #cc0000); color: #000; }
+    .m-mar { background: linear-gradient(to bottom, #f1c232, #7f6000); color: #000; }
+    .m-apr { background: linear-gradient(to bottom, #6aa84f, #274e13); color: #000; }
+    .m-mag { background: linear-gradient(to bottom, #6d9eeb, #1c4587); color: #000; }
+    .m-giu { background: linear-gradient(to bottom, #76a5af, #0c343d); color: #000; }
+    .m-lug { background: linear-gradient(to bottom, #8e7cc3, #351c75); color: #000; }
+    .m-ago { background: linear-gradient(to bottom, #a64d79, #4c1130); color: #000; }
+
+    .btn-riepilogo {
+      grid-column: span 2;
+      margin-top: 10px;
+      background: linear-gradient(to bottom, #ffff66, #cccc00);
+      border: 2px solid #000;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 20px;
+      font-weight: bold;
+      font-style: italic;
+      cursor: pointer;
+      box-shadow: 3px 4px 6px rgba(0,0,0,0.45);
+    }
+    .btn-riepilogo:hover { filter: brightness(1.06); }
+
+    /* VISTA 3: REGISTRO MENSILE */
+    .registro-wrapper {
+      background: #1a33cc;
+      min-height: calc(100vh - 42px);
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 155px 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 1000px) {
+      .registro-wrapper { grid-template-columns: 1fr; }
+    }
+    .side-months {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      padding-top: 10px;
+    }
+    .side-months .month-btn { font-size: 14px; padding: 6px; }
+    .side-months .month-btn.active-month { outline: 3px solid #ffff00; }
+
+    .sheet-container {
+      background: #fff;
+      border: 2px solid #000;
+      padding: 8px;
+      overflow-x: auto;
+    }
+    .sheet-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      background: #ededed;
+      padding: 6px 8px;
+      border: 1px solid #000;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .sheet-header-grid {
+      display: grid;
+      grid-template-columns: 70px 1.2fr 1.2fr 90px 1fr 75px 110px;
+      border: 2px solid #000;
+      margin-bottom: 6px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .sh-cell {
+      border-right: 1px solid #000;
+      padding: 4px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .sh-cell:last-child { border-right: none; }
+    .sh-green { background: #a9d08e; }
+    .sh-blue { background: #b4c6e7; }
+    .sh-grey { background: #d9d9d9; }
+    .sh-lbl { font-size: 10px; color: #222; }
+    .sh-val { font-size: 13px; margin-top: 2px; font-style: italic; }
+
+    .registro-main-area {
+      display: grid;
+      grid-template-columns: 1fr 185px;
+      gap: 8px;
+      align-items: start;
+    }
+    table.reg-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+      text-align: center;
+    }
+    table.reg-table th, table.reg-table td {
+      border: 1px solid #000;
+      padding: 2px 3px;
+    }
+    .th-green { background: #70ad47; color: #000; font-weight: bold; }
+    .th-orange { background: #c55a11; color: #000; font-weight: bold; }
+    .th-grey { background: #bfbfbf; color: #000; font-weight: bold; }
+    .th-blue { background: #8ea9db; color: #000; font-weight: bold; }
+
+    tr.row-work td { background: #d9d9d9; }
+    tr.row-work td.td-day { background: #a9d08e; font-weight: bold; }
+    tr.row-work td.td-extra { background: #e2efda; }
+    tr.row-weekend td { background: #548235; color: #000; font-weight: bold; }
+    tr.row-other td { background: #fff2cc; }
+    tr.row-other td.td-day { background: #a9d08e; font-weight: bold; }
+
+    .reg-input-time {
+      width: 46px;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-size: 11.5px;
+      font-family: inherit;
+      font-weight: bold;
+    }
+    .reg-input-time:focus { background: #fff; outline: 1px solid #1f4e78; }
+    .reg-select {
+      border: none;
+      background: transparent;
+      font-size: 11px;
+      font-weight: bold;
+      width: 98px;
+    }
+
+    .right-summary-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .nav-card {
+      background: #9bc2e6;
+      border: 2px solid #000;
+      padding: 8px;
+      text-align: center;
+    }
+    .btn-home-page {
+      background: #fff;
+      border: 2px solid #000;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-weight: bold;
+      color: #c00000;
+      cursor: pointer;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 11px;
+    }
+    .btn-home-page span.ico { font-size: 20px; }
+
+    table.causali-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+    table.causali-table th {
+      background: #808080;
+      color: #000;
+      border: 1px solid #000;
+      padding: 3px;
+    }
+    table.causali-table td {
+      border: 1px solid #000;
+      padding: 3px 5px;
+      background: #d9d9d9;
+      font-weight: bold;
+    }
+    table.causali-table td:last-child {
+      text-align: right;
+      width: 45px;
+      background: #ededed;
+    }
+
+    /* Modale */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal-box {
+      background: #fff;
+      border: 3px solid #1f4e78;
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 580px;
+      width: 92%;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-box h2 { color: #1f4e78; margin-bottom: 12px; font-size: 18px; }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .modal-item {
+      display: flex;
+      justify-content: space-between;
+      background: #f2f4f8;
+      padding: 5px 8px;
+      border: 1px solid #ccc;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA SUPERIORE -->
+  <div class="topbar">
+    <h1>📋 Registro Presenze Personale ATA — Gestione Annuale</h1>
+    <div class="topbar-actions">
+      <button class="btn-top" style="background:#92d050;color:#000;border-color:#274e13;" onclick="openGpsPunchModal()">📍 Timbratura GPS</button>
+      <button class="btn-top" style="background:#ffe699;color:#000;border-color:#7f6000;" onclick="openTabletShareModal()">📱 Tablet &amp; Condivisione</button>
+      <button class="btn-top" onclick="openGpsPlessiModal()">🏫 Coordinate Plessi</button>
+      <button class="btn-top" onclick="showView('indice')">🏠 Indice Generale</button>
+      <button class="btn-top" onclick="exportBackupJSON()">💾 Esporta Backup Anno (.json)</button>
+      <button class="btn-top" onclick="document.getElementById('importFile').click()">📂 Carica Backup</button>
+      <input type="file" id="importFile" accept=".json" class="hidden" onchange="importBackupJSON(event)" />
+      <button class="btn-top" onclick="exportCSV()">📥 Esporta Mese CSV</button>
+      <button class="btn-top btn-warn" onclick="nuovoAnnoScolastico()">📅 Nuovo Anno (Azzera Presenze)</button>
+      <button class="btn-top btn-danger" onclick="resetTuttoDaZero()">🗑️ Reset Totale</button>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- VISTA 1: INDICE GENERALE DEI DIPENDENTI (FOTO 1)          -->
+  <!-- ========================================================= -->
+  <div id="view-indice" class="indice-wrapper">
+    <div class="indice-header">
+      <div class="ih-left">
+        <input class="editable-banner-inp" id="hdr-left-txt" onchange="saveGlobalHeaders()" />
+      </div>
+      <div class="ih-center">
+        <input class="editable-banner-inp" id="hdr-center-txt" onchange="saveGlobalHeaders()" />
+      </div>
+      <div class="ih-right">
+        <input class="editable-banner-inp" id="hdr-right-txt" onchange="saveGlobalHeaders()" />
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <strong>🔍 Cerca dipendente:</strong>
+      <input type="text" id="searchInput" placeholder="Scrivi cognome, nome o qualifica..." oninput="renderIndice()" />
+      <span style="font-size:11px;color:#444;">💡 Clicca su qualsiasi nome o qualifica nella tabella per modificarli direttamente</span>
+      <button class="btn-add" onclick="addEmployee()">➕ Aggiungi Dipendente</button>
+    </div>
+
+    <div class="indice-grid">
+      <!-- Colonna Sinistra -->
+      <div>
+        <table class="emp-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nominativo (modificabile)</th>
+              <th>Qualifica</th>
+              <th>Scheda</th>
+              <th>Elim.</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-left"></tbody>
+        </table>
+      </div>
+
+      <!-- Colonna Centrale (Scuola & Foglio Firma Vuoto) -->
+      <div class="center-box">
+        <div class="school-badge">
+          <span class="icon-school">🏫</span>
+          <div class="title-school" id="center-school-title">ISTITUTO COMPRENSIVO<br>2° FROSINONE</div>
+        </div>
+        <div class="foglio-vuoto-box">
+          FOGLIO FIRMA<br>VUOTO
+        </div>
+        <div class="ata-badge">
+          🧹 Personale<br>ATA
+        </div>
+        <div style="font-size:11px;background:#fff;padding:6px;border:1px solid #000;border-radius:4px;width:100%;">
+          <strong>Anno Scolastico:</strong><br>
+          <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:4px;">
+            <input type="number" id="indice-anno1" style="width:62px;text-align:center;font-weight:bold;border:1px solid #1f4e78;border-radius:3px;padding:2px;color:#000080;" onchange="updateSchoolYearFromIndice()" />
+            <strong>/</strong>
+            <input type="number" id="indice-anno2" style="width:62px;text-align:center;font-weight:bold;border:1px solid #1f4e78;border-radius:3px;padding:2px;color:#000080;" onchange="updateSchoolYearFromIndice(true)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonna Destra -->
+      <div>
+        <table class="emp-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nominativo (modificabile)</th>
+              <th>Qualifica</th>
+              <th>Scheda</th>
+              <th>Elim.</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-right"></tbody>
+        </table>
+      </div>
+
+      <!-- Pannello Totali Annui GG. -->
+      <div class="totals-panel">
+        <div class="totals-title">TOTALI ANNUI GG.</div>
+        <div id="global-totals-list"></div>
+        <div class="extra-box">
+          <div class="extra-lbl">ORE STRAORDINARIO</div>
+          <div class="extra-val" id="global-extra-hours">00:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- VISTA 2: GESTIONE PRESENZE INDIVIDUALE (FOTO 2)           -->
+  <!-- ========================================================= -->
+  <div id="view-scheda" class="scheda-wrapper hidden">
+    <div class="scheda-container">
+      <div class="scheda-banner">GESTIONE PRESENZE INDIVIDUALE</div>
+      <div class="scheda-subbanner">INSERIRE L'ANNO SCOLASTICO DI INTERESSE</div>
+
+      <div class="scheda-top-controls">
+        <div class="year-box">
+          <input type="text" id="scheda-anno1" value="2025" onchange="saveSchedaMeta()" />
+          <input type="text" id="scheda-anno2" value="2026" onchange="saveSchedaMeta()" />
+        </div>
+        <button class="btn-indice-big" onclick="showView('indice')">
+          Indice <span class="home-icon" style="font-size:16px;padding:3px 6px;">🏠</span>
+        </button>
+        <button class="btn-top btn-warn" onclick="resetSingleEmployeeRecords()">
+          🔄 Azzera Mesi di Questo Dipendente
+        </button>
+      </div>
+
+      <div class="scheda-body">
+        <!-- Colonna 1: Badge Personale ATA -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+          <div class="ata-badge" style="padding:18px 14px;font-size:15px;text-align:center;">
+            🧹<br>Personale<br>ATA
+          </div>
+          <button class="btn-top btn-danger" onclick="deleteCurrentEmployee()">🗑️ Elimina Dipendente</button>
+        </div>
+
+        <!-- Colonna 2: Profilo lavorativo e dati anagrafici (tutti modificabili) -->
+        <div>
+          <table class="profilo-table">
+            <tr>
+              <td rowspan="2" class="p-title">PROFILO<br>LAVORATIVO</td>
+              <td class="p-sub">ferie AP</td>
+              <td class="p-val"><input type="text" id="scheda-ferie-ap" onchange="saveSchedaMeta()" /></td>
+            </tr>
+            <tr>
+              <td class="p-sub">ore da rec.AP</td>
+              <td class="p-val"><input type="text" id="scheda-ore-rec" onchange="saveSchedaMeta()" /></td>
+            </tr>
+          </table>
+
+          <div class="field-row">
+            <div class="field-lbl">Dipendente</div>
+            <div class="field-inp"><input type="text" id="scheda-nome" onchange="saveSchedaMeta()" /></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-lbl">Etichetta Pulsante Indice</div>
+            <div class="field-inp"><input type="text" id="scheda-short" onchange="saveSchedaMeta()" /></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-lbl">Qualifica (Indice)</div>
+            <div class="field-inp"><input type="text" id="scheda-qual-short" onchange="saveSchedaMeta()" /></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-lbl">Qualifica Estesa</div>
+            <div class="field-inp"><input type="text" id="scheda-qualifica" onchange="saveSchedaMeta()" /></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-lbl">Nomina</div>
+            <div class="field-inp">
+              <input type="text" id="scheda-nomina" list="nomina-options" onchange="saveSchedaMeta()" />
+              <datalist id="nomina-options">
+                <option value="Ruolo">
+                <option value="Incarico Annuale">
+                <option value="Supplenza Breve">
+                <option value="Supplenza Fino al 30/06">
+                <option value="Supplenza Fino al 31/08">
+              </datalist>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-lbl">Plesso:</div>
+            <div class="field-inp">
+              <select id="scheda-plesso" onchange="saveSchedaMeta()">
+                <option value="Pietrobono">Pietrobono</option>
+                <option value="Via Verdi">Via Verdi</option>
+                <option value="La Rinascita">La Rinascita</option>
+                <option value="Giovanni XXIII">Giovanni XXIII</option>
+                <option value="Suor Teresa Spinell">Suor Teresa Spinell</option>
+                <option value="Pinocchio">Pinocchio</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row" style="margin-top:14px;">
+            <div class="field-lbl">Sabato lavorativo</div>
+            <div class="field-inp">
+              <select id="scheda-sabato" onchange="saveSchedaMeta()">
+                <option value="NO">NO</option>
+                <option value="SI">SI</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-lbl">Sono previsti rientri ?</div>
+            <div class="field-inp">
+              <select id="scheda-rientri" onchange="saveSchedaMeta()">
+                <option value="NO">NO</option>
+                <option value="SI">SI</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row" style="margin-top:14px;">
+            <div class="field-lbl">Ore lavorative giornaliere</div>
+            <div class="field-inp"><input type="text" id="scheda-ore-gg" value="07:12" onchange="saveSchedaMeta()" /></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-lbl">Orario standard (Entrata / Uscita)</div>
+            <div class="field-inp" style="display:flex;gap:8px;align-items:center;">
+              <input type="text" id="scheda-std-in" value="07:30" style="width:65px;text-align:center;background:#fff;border:1px solid #999;" onchange="saveSchedaMeta()" />
+              <span>→</span>
+              <input type="text" id="scheda-std-out" value="14:42" style="width:65px;text-align:center;background:#fff;border:1px solid #999;" onchange="saveSchedaMeta()" />
+            </div>
+          </div>
+
+          <div style="margin-top:14px;background:#e8eef5;border:2px solid #000;border-radius:4px;padding:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+              <strong style="font-size:12px;">🕒 Orario Settimanale Personalizzato (diverso per giorni e/o settimane)</strong>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                <label><strong>Ciclo settimane:</strong></label>
+                <select id="scheda-week-cycle" onchange="changeWeekCycle()" style="padding:2px 5px;border:1px solid #000;border-radius:3px;font-weight:bold;background:#fff;">
+                  <option value="1">1 Settimana (uguale ogni sett.)</option>
+                  <option value="2">2 Settimane (Sett. 1 / Sett. 2)</option>
+                  <option value="4">4 Settimane (Ciclo mensile 1-4)</option>
+                </select>
+              </div>
+            </div>
+            <div style="font-size:11px;color:#222;margin-bottom:6px;">
+              Imposta per ogni giorno (Lun–Dom) e settimana: <strong>Ore gg</strong>, <strong>In M</strong>, <strong>Out M</strong>, <strong>In P</strong>, <strong>Out P</strong> (usa <code>00:00</code> se non lavorato/pomeriggio assente).
+            </div>
+            <div id="weekly-schedule-container" style="overflow-x:auto;"></div>
+          </div>
+        </div>
+
+        <!-- Colonna 3: Griglia 12 Mesi + Riepilogo -->
+        <div class="months-grid" id="scheda-months-grid">
+          <button class="month-btn m-set" onclick="openMonth(8)">Settembre</button>
+          <button class="month-btn m-mar" onclick="openMonth(2)">Marzo</button>
+
+          <button class="month-btn m-ott" onclick="openMonth(9)">Ottobre</button>
+          <button class="month-btn m-apr" onclick="openMonth(3)">Aprile</button>
+
+          <button class="month-btn m-nov" onclick="openMonth(10)">Novembre</button>
+          <button class="month-btn m-mag" onclick="openMonth(4)">Maggio</button>
+
+          <button class="month-btn m-dic" onclick="openMonth(11)">Dicembre</button>
+          <button class="month-btn m-giu" onclick="openMonth(5)">Giugno</button>
+
+          <button class="month-btn m-gen" onclick="openMonth(0)">Gennaio</button>
+          <button class="month-btn m-lug" onclick="openMonth(6)">Luglio</button>
+
+          <button class="month-btn m-feb" onclick="openMonth(1)">Febbraio</button>
+          <button class="month-btn m-ago" onclick="openMonth(7)">Agosto</button>
+
+          <button class="btn-riepilogo" onclick="openRiepilogoModal()">Riepilogo Annuale</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- VISTA 3: PAGINA DI INSERIMENTO MENSILE (FOTO 3)           -->
+  <!-- ========================================================= -->
+  <div id="view-registro" class="registro-wrapper hidden">
+    <!-- Barra laterale Mesi -->
+    <div class="side-months" id="reg-side-months"></div>
+
+    <!-- Foglio Registro -->
+    <div class="sheet-container">
+      <!-- Barra rapida azioni mese -->
+      <div class="sheet-toolbar">
+        <div>
+          <strong>⚡ Azioni rapide mese:</strong>
+          <button class="btn-top" onclick="applyWeeklyScheduleToMonth()">🗓️ Applica Orario Settimanale (giorni/settimane)</button>
+          <button class="btn-top" onclick="applyStandardScheduleToMonth()">📋 Applica Orario Standard Base</button>
+          <button class="btn-top btn-warn" onclick="resetCurrentMonth()">🔄 Azzera Questo Mese</button>
+        </div>
+        <div style="font-size:11px;color:#333;">
+          Puoi modificare direttamente ore, causali, timbrature e saldi di ogni giorno
+        </div>
+      </div>
+
+      <!-- Intestazione Foglio -->
+      <div class="sheet-header-grid">
+        <div class="sh-cell" style="background:#fff;">SIG./RA</div>
+        <div class="sh-cell sh-green">
+          <span class="sh-lbl">Dipendente</span>
+          <span class="sh-val" id="reg-hdr-nome">Brinoni Stella</span>
+        </div>
+        <div class="sh-cell sh-green">
+          <span class="sh-lbl">Qualifica</span>
+          <span class="sh-val" id="reg-hdr-qualifica">Assistente Amministrativo</span>
+        </div>
+        <div class="sh-cell sh-blue">
+          <span class="sh-lbl">Plesso:</span>
+          <span class="sh-val" id="reg-hdr-plesso">L. Pietrobono</span>
+        </div>
+        <div class="sh-cell sh-blue">
+          <span class="sh-lbl">Nomina</span>
+          <span class="sh-val" id="reg-hdr-nomina">Ruolo</span>
+        </div>
+        <div class="sh-cell sh-grey">
+          <span class="sh-lbl">ANNO</span>
+          <span class="sh-val" id="reg-hdr-anno">2025</span>
+        </div>
+        <div class="sh-cell sh-green">
+          <span class="sh-lbl">Mese</span>
+          <span class="sh-val" id="reg-hdr-mese">SETTEMBRE</span>
+        </div>
+      </div>
+
+      <!-- Corpo Registro + Riepilogo Destro -->
+      <div class="registro-main-area">
+        <div>
+          <table class="reg-table">
+            <thead>
+              <tr>
+                <th colspan="2" rowspan="2" class="th-green">Giorno</th>
+                <th rowspan="2" class="th-orange">ore<br>giornaliere</th>
+                <th rowspan="2" class="th-orange">tipo di<br>assenza</th>
+                <th colspan="6" class="th-grey">TIMBRATURE</th>
+                <th rowspan="2" class="th-grey">Ore<br>permesso</th>
+                <th rowspan="2" class="th-grey">straordinario</th>
+                <th colspan="3" class="th-blue">SERVIZIO PRESTATO</th>
+                <th rowspan="2" class="th-green">Esito GPS</th>
+              </tr>
+              <tr>
+                <th class="th-grey">Entrata<br>h.m</th>
+                <th class="th-grey">Uscita<br>h.m</th>
+                <th class="th-grey">Ore lavoro<br>mattino</th>
+                <th class="th-grey">Entrata<br>h.m</th>
+                <th class="th-grey">Uscita<br>h.m</th>
+                <th class="th-grey">Ore lavoro<br>pomer.</th>
+                <th class="th-blue">Totale ore<br>lavoro</th>
+                <th class="th-blue">Saldo<br>Attivo</th>
+                <th class="th-blue">Saldo<br>Passivo</th>
+              </tr>
+            </thead>
+            <tbody id="reg-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Pannello Destro Home Page / Causali / Indice -->
+        <div class="right-summary-box">
+          <div class="nav-card">
+            <button class="btn-home-page" onclick="showView('scheda')">
+              <span class="ico">🏠</span>
+              <span>Home Page</span>
+            </button>
+          </div>
+
+          <table class="causali-table">
+            <thead>
+              <tr>
+                <th colspan="2">NOTE / TOTALI MESE</th>
+              </tr>
+            </thead>
+            <tbody id="reg-causali-tbody"></tbody>
+          </table>
+
+          <div class="nav-card">
+            <button class="btn-indice-big" style="font-size:14px;padding:5px 12px;" onclick="showView('indice')">
+              Indice <span class="home-icon">🏠</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE RIEPILOGO ANNUALE -->
+  <div id="riepilogo-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2 id="modal-emp-title">📊 Riepilogo Annuale</h2>
+      <div class="modal-grid" id="modal-stats-grid"></div>
+      <div style="text-align:right;">
+        <button class="btn-add" onclick="closeRiepilogoModal()">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE AGGIUNGI DIPENDENTE -->
+  <div id="add-emp-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>➕ Aggiungi Nuovo Dipendente</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <div>
+          <label style="font-weight:bold;display:block;margin-bottom:3px;">Cognome e Nome *</label>
+          <input type="text" id="new-emp-full" placeholder="Es. Rossi Mario" style="width:100%;padding:7px;border:1px solid #666;border-radius:4px;" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-weight:bold;display:block;margin-bottom:3px;">Qualifica Breve (Indice)</label>
+            <select id="new-emp-qual-short" style="width:100%;padding:7px;border:1px solid #666;border-radius:4px;" onchange="syncNewEmpQualFull()">
+              <option value="Coll.Scolastico">Coll.Scolastico</option>
+              <option value="Ass. Amm.vo">Ass. Amm.vo</option>
+              <option value="D.S.G.A.">D.S.G.A.</option>
+              <option value="Doc. altri comp">Doc. altri comp</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-weight:bold;display:block;margin-bottom:3px;">Qualifica Estesa</label>
+            <input type="text" id="new-emp-qual-full" value="Collaboratore Scolastico" style="width:100%;padding:7px;border:1px solid #666;border-radius:4px;" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-weight:bold;display:block;margin-bottom:3px;">Plesso</label>
+            <select id="new-emp-plesso" style="width:100%;padding:7px;border:1px solid #666;border-radius:4px;">
+              <option value="Pietrobono">Pietrobono</option>
+              <option value="Via Verdi">Via Verdi</option>
+              <option value="La Rinascita">La Rinascita</option>
+              <option value="Giovanni XXIII">Giovanni XXIII</option>
+              <option value="Suor Teresa Spinell">Suor Teresa Spinell</option>
+              <option value="Pinocchio">Pinocchio</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-weight:bold;display:block;margin-bottom:3px;">Nomina</label>
+            <select id="new-emp-nomina" style="width:100%;padding:7px;border:1px solid #666;border-radius:4px;">
+              <option value="Ruolo">Ruolo</option>
+              <option value="Incarico Annuale">Incarico Annuale</option>
+              <option value="Supplenza Breve">Supplenza Breve</option>
+              <option value="Supplenza Fino al 30/06">Supplenza Fino al 30/06</option>
+              <option value="Supplenza Fino al 31/08">Supplenza Fino al 31/08</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn-top" onclick="closeAddEmpModal()">Annulla</button>
+        <button class="btn-add" onclick="confirmAddEmployee()">Salva Dipendente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE NUOVO ANNO SCOLASTICO -->
+  <div id="new-year-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>📅 Avvia Nuovo Anno Scolastico</h2>
+      <p style="margin-bottom:10px;line-height:1.4;">
+        Questa operazione <strong>mantiene tutto l'elenco dei dipendenti</strong> attuali e <strong>azzera tutti i fogli presenze mensili</strong> per iniziare il nuovo anno scolastico.
+      </p>
+      <div style="margin-bottom:16px;">
+        <label style="font-weight:bold;display:block;margin-bottom:4px;">Anno iniziale (es. 2026 per 2026/2027):</label>
+        <input type="number" id="new-year-input" style="width:140px;padding:7px;font-size:15px;font-weight:bold;border:1px solid #666;border-radius:4px;" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn-top" onclick="closeNewYearModal()">Annulla</button>
+        <button class="btn-top btn-warn" onclick="confirmNewYear()">Conferma e Azzera Presenze</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE RESET TOTALE -->
+  <div id="reset-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>🗑️ Opzioni di Reset Archivio</h2>
+      <p style="margin-bottom:14px;line-height:1.4;">Scegli come desideri reimpostare l'applicazione:</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <button class="btn-top btn-warn" style="padding:10px;text-align:left;" onclick="executeReset(1)">
+          <strong>1. Ripristina Elenco Originale (34 dipendenti) e Azzera Mesi</strong><br>
+          <span style="font-weight:normal;font-size:11px;">Rimette i 34 dipendenti predefiniti e cancella tutte le presenze inserite.</span>
+        </button>
+        <button class="btn-top btn-danger" style="padding:10px;text-align:left;" onclick="executeReset(2)">
+          <strong>2. Svuota Completamente Tutto (Foglio Bianco: 0 dipendenti)</strong><br>
+          <span style="font-weight:normal;font-size:11px;">Cancella sia i dipendenti sia le presenze per inserire tutto da zero.</span>
+        </button>
+      </div>
+      <div style="text-align:right;">
+        <button class="btn-top" onclick="closeResetModal()">Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE TIMBRATURA GPS -->
+  <div id="gps-punch-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>📍 Timbratura Rapida con Rilevamento GPS</h2>
+      <div style="background:#eef4fb;border:1px solid #2e75b6;padding:10px;border-radius:5px;margin-bottom:12px;font-size:12px;">
+        <strong>Data e ora attuale:</strong> <span id="gps-live-clock" style="font-weight:bold;color:#1f4e78;"></span><br>
+        Seleziona il dipendente e il turno: puoi usare <strong>Rileva Posizione e Timbra</strong> (con GPS) oppure <strong>Timbra Ora (senza GPS)</strong>.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+        <div>
+          <label style="font-weight:bold;display:block;margin-bottom:3px;">Dipendente:</label>
+          <select id="gps-emp-select" onchange="updateGpsSelectedEmpInfo()" style="width:100%;padding:7px;border:1px solid #666;border-radius:4px;font-weight:bold;"></select>
+          <div id="gps-emp-plesso-info" style="font-size:11px;color:#333;margin-top:3px;"></div>
+        </div>
+        <div>
+          <label style="font-weight:bold;display:block;margin-bottom:3px;">Tipo Timbratura:</label>
+          <select id="gps-punch-type" style="width:100%;padding:7px;border:1px solid #666;border-radius:4px;font-weight:bold;">
+            <option value="auto">🤖 Automatica (rileva turno successivo libero)</option>
+            <option value="inM">☀️ Entrata Mattino</option>
+            <option value="outM">☀️ Uscita Mattino</option>
+            <option value="inP">🌆 Entrata Pomeriggio</option>
+            <option value="outP">🌆 Uscita Pomeriggio</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-weight:bold;display:block;margin-bottom:3px;">Orario (lascia vuoto per usare l'ora attuale):</label>
+          <input type="time" id="gps-custom-time" style="width:160px;padding:6px;border:1px solid #666;border-radius:4px;font-weight:bold;" />
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;">
+          <input type="checkbox" id="gps-auto-punch-on-lock" checked />
+          <label for="gps-auto-punch-on-lock"><strong>Timbra automaticamente non appena il GPS aggancia il raggio del plesso</strong></label>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;">
+          <input type="checkbox" id="gps-allow-outside" />
+          <label for="gps-allow-outside">Consenti registrazione anche se fuori raggio (segnala distanza)</label>
+        </div>
+      </div>
+      <div id="gps-status-box" class="hidden" style="padding:10px;border-radius:5px;margin-bottom:12px;font-size:12px;line-height:1.4;"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+        <button class="btn-top" onclick="closeGpsPunchModal()">Chiudi</button>
+        <button class="btn-top btn-warn" onclick="executeManualPunch()">🕒 Timbra Ora (senza GPS)</button>
+        <button class="btn-add" style="background:#38761d;" onclick="executeGpsPunch()">📍 Rileva Posizione e Timbra</button>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- MODALE CONDIVISIONE UI TRA VARI TABLET DELLE SCUOLE -->
+  <div id="tablet-share-modal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:680px;">
+      <h2>📱 Condivisione UI e Timbrature tra Tablet dei Plessi</h2>
+      <p style="font-size:12px;color:#333;margin-bottom:10px;line-height:1.4;">
+        Configura questo tablet come postazione di un plesso (con aggancio GPS automatico) e sincronizza i dati con gli altri tablet delle scuole tramite <strong>canale live locale</strong>, <strong>link/codice di condivisione</strong> oppure <strong>file di sincronizzazione</strong>.
+      </p>
+
+      <div style="background:#eef4fb;border:1px solid #2e75b6;padding:10px;border-radius:5px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          <div>
+            <strong>🏫 Plesso assegnato a questo tablet:</strong>
+            <select id="tablet-plesso-select" onchange="applyTabletPlessoMode()" style="padding:5px 8px;border:1px solid #1f4e78;border-radius:4px;font-weight:bold;margin-left:6px;">
+              <option value="">— Tutte le scuole (Modalità Completa) —</option>
+              <option value="Pietrobono">Pietrobono</option>
+              <option value="Via Verdi">Via Verdi</option>
+              <option value="La Rinascita">La Rinascita</option>
+              <option value="Giovanni XXIII">Giovanni XXIII</option>
+              <option value="Suor Teresa Spinell">Suor Teresa Spinell</option>
+              <option value="Pinocchio">Pinocchio</option>
+            </select>
+          </div>
+          <span id="tablet-live-sync-badge" style="background:#d9ead3;color:#274e13;border:1px solid #38761d;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:bold;">🔄 Sincronizzazione Live Attiva</span>
+        </div>
+        <div style="font-size:11.5px;color:#222;" id="tablet-plesso-summary">
+          Quando selezioni un plesso, la finestra GPS filtra automaticamente i dipendenti del plesso e aggancia il GPS in tempo reale.
+        </div>
+      </div>
+
+      <div style="background:#f9fafc;border:1px solid #999;padding:10px;border-radius:5px;margin-bottom:12px;">
+        <strong style="font-size:12px;display:block;margin-bottom:6px;">🔗 Sincronizzazione Rapida via Codice / Link tra Tablet</strong>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <button class="btn-top" onclick="generateTabletSyncCode()">📤 Genera Codice</button>
+          <button class="btn-top" style="background:#cfe2f3;color:#000;border-color:#1f4e78;" onclick="generateTabletShareLink()">🔗 Genera Link Condivisione</button>
+          <button class="btn-top" onclick="copyTabletSyncCode()">📋 Copia Codice/Link</button>
+          <button class="btn-top" style="background:#92d050;color:#000;border-color:#274e13;" onclick="applyTabletSyncCode()">📥 Unisci nel Tablet</button>
+        </div>
+        <textarea id="tablet-sync-code-box" rows="3" placeholder="Premi 'Genera Codice Condivisione' per esportare lo stato da un tablet oppure incolla qui il codice ricevuto da un altro tablet e premi 'Unisci Codice nel Tablet'..." style="width:100%;padding:6px;font-family:monospace;font-size:11px;border:1px solid #777;border-radius:4px;"></textarea>
+        <div id="tablet-sync-feedback" style="font-size:11.5px;margin-top:5px;font-weight:bold;color:#1f4e78;"></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn-top" onclick="closeTabletShareModal()">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE CONFIGURAZIONE COORDINATE PLESSI -->
+  <div id="gps-plessi-modal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:680px;">
+      <h2>🏫 Coordinate GPS e Raggio dei Plessi</h2>
+      <p style="font-size:12px;margin-bottom:10px;color:#333;line-height:1.4;">
+        Imposta latitudine, longitudine e raggio (in metri) per ogni plesso. Se ti trovi fisicamente nel plesso, puoi cliccare su <strong>"📍 Usa posizione attuale"</strong>.
+      </p>
+      <div style="overflow-x:auto;margin-bottom:14px;">
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px;text-align:center;">
+          <thead>
+            <tr style="background:#9bc2e6;">
+              <th style="border:1px solid #000;padding:4px;">Plesso</th>
+              <th style="border:1px solid #000;padding:4px;">Link Google Maps</th>
+              <th style="border:1px solid #000;padding:4px;">Raggio (m)</th>
+              <th style="border:1px solid #000;padding:4px;">Posizione Mappa</th>
+              <th style="border:1px solid #000;padding:4px;">Rileva qui</th>
+            </tr>
+          </thead>
+          <tbody id="gps-plessi-tbody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn-top" onclick="closeGpsPlessiModal()">Chiudi</button>
+        <button class="btn-add" onclick="saveGpsPlessi()">💾 Salva Coordinate Plessi</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MONTHS_INFO = [
+      { idx: 8, name: 'Settembre', yearOffset: 0 },
+      { idx: 9, name: 'Ottobre',   yearOffset: 0 },
+      { idx: 10, name: 'Novembre', yearOffset: 0 },
+      { idx: 11, name: 'Dicembre', yearOffset: 0 },
+      { idx: 0, name: 'Gennaio',   yearOffset: 1 },
+      { idx: 1, name: 'Febbraio',  yearOffset: 1 },
+      { idx: 2, name: 'Marzo',     yearOffset: 1 },
+      { idx: 3, name: 'Aprile',    yearOffset: 1 },
+      { idx: 4, name: 'Maggio',    yearOffset: 1 },
+      { idx: 5, name: 'Giugno',    yearOffset: 1 },
+      { idx: 6, name: 'Luglio',    yearOffset: 1 },
+      { idx: 7, name: 'Agosto',    yearOffset: 1 }
+    ];
+
+    const CAUSALI = [
+      'Lavoro', 'Malattia', 'Ferie A.C.', 'FerieAnnoP', 'FestivitàSop',
+      'SantoPatr', 'Perm.Retr', 'Rec. Ore', 'Perm.sin.', 'Legge104',
+      'Visita Spec', 'Cong. parentale', 'Riposo/festivo', 'Lutto'
+    ];
+
+    const DAY_NAMES = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+
+    const INITIAL_EMPLOYEES = [
+      { id: 1,  short: 'Brinoni',      full: 'Brinoni Stella',          qualShort: 'Ass. Amm.vo',     qualFull: 'Assistente Amministrativo', plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 10, oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 2,  short: 'Ceccarelli',   full: 'Ceccarelli Anna T.',      qualShort: 'Ass. Amm.vo',     qualFull: 'Assistente Amministrativo', plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 8,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 3,  short: 'De Fioravante',full: 'De Fioravante Adelina',   qualShort: 'Ass. Amm.vo',     qualFull: 'Assistente Amministrativo', plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 6,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 4,  short: 'Fraioli',      full: 'Fraioli Margherita',      qualShort: 'Ass. Amm.vo',     qualFull: 'Assistente Amministrativo', plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 12, oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 5,  short: 'Giugliano',    full: 'Giugliano Francesco',     qualShort: 'Ass. Amm.vo',     qualFull: 'Assistente Amministrativo', plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 5,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 6,  short: 'Lolli',        full: 'Lolli Eleonora',          qualShort: 'Ass. Amm.vo',     qualFull: 'Assistente Amministrativo', plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 9,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 7,  short: 'Naddei',       full: 'Naddei Eleonora',         qualShort: 'Ass. Amm.vo',     qualFull: 'Assistente Amministrativo', plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 7,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 8,  short: 'Secondino',    full: 'Secondino Angelo',        qualShort: 'Ass. Amm.vo',     qualFull: 'Assistente Amministrativo', plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 4,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 9,  short: 'Zompi',        full: 'Zompi Ferdinando',        qualShort: 'D.S.G.A.',        qualFull: 'Direttore S.G.A.',          plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 15, oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 10, short: 'Caianiello',   full: 'Caianiello Agnese',       qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 6,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 11, short: 'Calcagni',     full: 'Calcagni Desirè',         qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 5,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 12, short: 'Capezzera',    full: 'Capezzera Raffaella',     qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 8,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 13, short: 'Carnevale',    full: 'Carnevale Marta',         qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 7,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 14, short: 'Cerro',        full: 'Cerro Massimo',           qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 10, oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 15, short: 'Ciolfi',       full: 'Ciolfi Antonietta',       qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 6,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 16, short: 'Colasanti',    full: 'Colasanti Margherita',    qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 9,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 17, short: 'D\'Amici',     full: 'D\'Amici Vanessa',        qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 4,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 18, short: 'De Lellis',    full: 'De Lellis Guido',         qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 11, oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 19, short: 'Del Sesto',    full: 'Del Sesto Massimo',       qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 7,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 20, short: 'Droghei',      full: 'Droghei Antonio',         qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 8,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 21, short: 'Falcone',      full: 'Falcone Antonio',         qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 5,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 22, short: 'Grasso',       full: 'Grasso Luana',            qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 6,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 23, short: 'Laezza',       full: 'Laezza Marco',            qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 9,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 24, short: 'Petrillo',     full: 'Petrillo Daniela',        qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 10, oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 25, short: 'Pittiglio',    full: 'Pittiglio Adriana',       qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 7,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 26, short: 'Raponi',       full: 'Raponi Luciana',          qualShort: 'Doc. altri comp', qualFull: 'Docente Altri Compiti',     plesso: 'Sede Centrale', nomina: 'Ruolo', ferieAP: 12, oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 27, short: 'Romano',       full: 'Romano A.Maria',          qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 8,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 28, short: 'Rossi',        full: 'Rossi Rossella',          qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 6,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 29, short: 'Sacco',        full: 'Sacco Anna',              qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 5,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 30, short: 'Sanna',        full: 'Sanna Vittoria',          qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 9,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 31, short: 'Spaziani',     full: 'Spaziani A. Maria',       qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 7,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 32, short: 'Taliento',     full: 'Taliento Angela',         qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 8,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 33, short: 'Ziello',       full: 'Ziello Luca',             qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 6,  oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' },
+      { id: 34, short: 'Quintigliano', full: 'Quintigliano Luisa',      qualShort: 'Coll.Scolastico', qualFull: 'Collaboratore Scolastico',  plesso: 'Pietrobono', nomina: 'Ruolo', ferieAP: 10, oreRecAP: '0:00:00', sabato: 'NO', rientri: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' }
+    ];
+
+    let appState = {
+      hdrLeft: 'Registro Foglio Presenze per anno scolastico',
+      hdrCenter: 'ISTITUTO COMPRENSIVO 2° FROSINONE',
+      hdrRight: 'creato da Eleonora Naddei',
+      anno1: 2025,
+      anno2: 2026,
+      employees: JSON.parse(JSON.stringify(INITIAL_EMPLOYEES)),
+      records: {}
+    };
+
+    let currentEmpId = 1;
+    let currentMonthIdx = 8;
+
+
+    const DEFAULT_PLESSI_GPS = {
+      'Pietrobono':          { mapUrl: 'https://maps.app.goo.gl/FG55sBQBdsQNAQGt9', lat: 41.6396, lon: 13.3426, radius: 150 },
+      'Via Verdi':           { mapUrl: 'https://maps.app.goo.gl/Mot3zeQAs4FDxZtR8', lat: 41.6412, lon: 13.3485, radius: 150 },
+      'La Rinascita':        { mapUrl: 'https://maps.app.goo.gl/WDjtKnZrkjbAUtAT7', lat: 41.6365, lon: 13.3510, radius: 150 },
+      'Giovanni XXIII':      { mapUrl: 'https://maps.app.goo.gl/awabWmvNBF487jMT6', lat: 41.6440, lon: 13.3390, radius: 150 },
+      'Suor Teresa Spinell': { mapUrl: 'https://maps.app.goo.gl/B48zk9v6nxmsbmwR8', lat: 41.6380, lon: 13.3450, radius: 150 },
+      'Pinocchio':           { mapUrl: 'https://maps.app.goo.gl/1aq5kJeyJQ6pUE9Q9', lat: 41.6350, lon: 13.3415, radius: 150 }
+    };
+
+    function ensurePlessiGps() {
+      if (!appState.plessiGps || typeof appState.plessiGps !== 'object') {
+        appState.plessiGps = JSON.parse(JSON.stringify(DEFAULT_PLESSI_GPS));
+      } else {
+        Object.keys(DEFAULT_PLESSI_GPS).forEach(k => {
+          if (!appState.plessiGps[k]) {
+            appState.plessiGps[k] = JSON.parse(JSON.stringify(DEFAULT_PLESSI_GPS[k]));
+          } else if (!appState.plessiGps[k].mapUrl && DEFAULT_PLESSI_GPS[k].mapUrl) {
+            appState.plessiGps[k].mapUrl = DEFAULT_PLESSI_GPS[k].mapUrl;
+          }
+        });
+      }
+    }
+
+    function getPlessoMapUrl(pName, cfg) {
+      const def = DEFAULT_PLESSI_GPS[pName];
+      if (def && def.mapUrl) return def.mapUrl;
+      if (cfg && cfg.mapUrl) return cfg.mapUrl;
+      return buildGoogleMapsUrl(cfg ? cfg.lat : 41.6396, cfg ? cfg.lon : 13.3426);
+    }
+
+    function haversineDistanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.round(R * c);
+    }
+
+    let gpsClockTimer = null;
+    let gpsWatchId = null;
+    let latestGpsFix = null;
+    let autoPunchDoneForFix = false;
+
+    function renderLiveGpsStatus(statusBox, pos) {
+      const userLat = pos.coords.latitude;
+      const userLon = pos.coords.longitude;
+      const accuracy = Math.round(pos.coords.accuracy || 0);
+      latestGpsFix = { lat: userLat, lon: userLon, accuracy, ts: Date.now() };
+
+      const empId = Number(document.getElementById('gps-emp-select').value);
+      const emp = appState.employees.find(e => e.id === empId);
+      const pName = emp ? ((emp.plesso === 'L. Pietrobono') ? 'Pietrobono' : (emp.plesso || 'Pietrobono')) : 'Pietrobono';
+      const cfg = appState.plessiGps[pName] || DEFAULT_PLESSI_GPS['Pietrobono'];
+      const dist = haversineDistanceMeters(userLat, userLon, Number(cfg.lat), Number(cfg.lon));
+      const isInside = dist <= Number(cfg.radius);
+      const userMapUrl = buildGoogleMapsUrl(userLat.toFixed(6), userLon.toFixed(6));
+
+      statusBox.classList.remove('hidden');
+      statusBox.style.background = isInside ? '#d9ead3' : '#fff2cc';
+      statusBox.style.border = isInside ? '1px solid #38761d' : '1px solid #bf9000';
+      statusBox.innerHTML = `
+        <strong>${isInside ? '📡 GPS agganciato — Dentro il raggio del plesso' : '📡 GPS agganciato — Fuori dal raggio del plesso'} "${pName}"</strong><br>
+        Posizione: <strong>${userLat.toFixed(6)}, ${userLon.toFixed(6)}</strong> (±${accuracy} m) · Distanza: <strong>${dist} m</strong> / ${cfg.radius} m · <a href="${userMapUrl}" target="_blank" rel="noopener noreferrer" style="color:#1f4e78;font-weight:bold;">🗺️ Posizione GPS</a>
+      `;
+
+      const autoPunchToggle = document.getElementById('gps-auto-punch-on-lock');
+      if (autoPunchToggle && autoPunchToggle.checked && isInside && !autoPunchDoneForFix) {
+        autoPunchDoneForFix = true;
+        applyPunchWithFix(userLat, userLon, accuracy, true);
+      }
+    }
+
+    function startAutoGpsTracking() {
+      const statusBox = document.getElementById('gps-status-box');
+      if (!navigator.geolocation) {
+        statusBox.classList.remove('hidden');
+        statusBox.style.background = '#f4cccc';
+        statusBox.style.border = '1px solid #990000';
+        statusBox.innerHTML = '❌ Il browser o dispositivo in uso non supporta la geolocalizzazione GPS.';
+        return;
+      }
+
+      statusBox.classList.remove('hidden');
+      statusBox.style.background = '#fff2cc';
+      statusBox.style.border = '1px solid #bf9000';
+      statusBox.innerHTML = '📡 Aggancio automatico al GPS in corso... Consenti l\'accesso alla posizione sul dispositivo.';
+
+      if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => renderLiveGpsStatus(statusBox, pos),
+        (err) => {
+          statusBox.classList.remove('hidden');
+          statusBox.style.background = '#f4cccc';
+          statusBox.style.border = '1px solid #990000';
+          statusBox.innerHTML = `❌ Impossibile agganciare il GPS (${err.message}). Verifica i permessi di localizzazione e la connessione HTTPS.`;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+
+      gpsWatchId = navigator.geolocation.watchPosition(
+        (pos) => renderLiveGpsStatus(statusBox, pos),
+        () => {},
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 2000 }
+      );
+    }
+
+    function stopAutoGpsTracking() {
+      if (gpsWatchId !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+      }
+    }
+
+    function openGpsPunchModal() {
+      ensurePlessiGps();
+      autoPunchDoneForFix = false;
+      const sel = document.getElementById('gps-emp-select');
+      const activePlesso = appState.activeTabletPlesso || '';
+      const sorted = [...appState.employees]
+        .filter(e => !activePlesso || ((e.plesso === 'L. Pietrobono') ? 'Pietrobono' : (e.plesso || 'Pietrobono')) === activePlesso)
+        .sort((a, b) => (a.full || '').localeCompare(b.full || '', 'it'));
+      sel.innerHTML = sorted.map(e => `<option value="${e.id}" ${e.id === currentEmpId ? 'selected' : ''}>${e.full} (${e.qualShort})</option>`).join('');
+      updateGpsSelectedEmpInfo();
+
+      const updateClock = () => {
+        const now = new Date();
+        document.getElementById('gps-live-clock').textContent = now.toLocaleString('it-IT', {
+          weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+      };
+      updateClock();
+      if (gpsClockTimer) clearInterval(gpsClockTimer);
+      gpsClockTimer = setInterval(updateClock, 1000);
+
+      if (document.getElementById('gps-custom-time')) document.getElementById('gps-custom-time').value = '';
+      document.getElementById('gps-punch-modal').classList.remove('hidden');
+      startAutoGpsTracking();
+    }
+
+    function closeGpsPunchModal() {
+      if (gpsClockTimer) clearInterval(gpsClockTimer);
+      stopAutoGpsTracking();
+      document.getElementById('gps-punch-modal').classList.add('hidden');
+    }
+
+    function updateGpsSelectedEmpInfo() {
+      ensurePlessiGps();
+      autoPunchDoneForFix = false;
+      const empId = Number(document.getElementById('gps-emp-select').value);
+      const emp = appState.employees.find(e => e.id === empId);
+      if (!emp) return;
+      const pName = (emp.plesso === 'L. Pietrobono') ? 'Pietrobono' : (emp.plesso || 'Pietrobono');
+      const cfg = appState.plessiGps[pName] || DEFAULT_PLESSI_GPS['Pietrobono'];
+      const targetMapUrl = getPlessoMapUrl(pName, cfg);
+      document.getElementById('gps-emp-plesso-info').innerHTML =
+        `Plesso assegnato: <strong>${pName}</strong> — Raggio: <strong>${cfg.radius} m</strong> · <a href="${targetMapUrl}" target="_blank" rel="noopener noreferrer" style="color:#1f4e78;font-weight:bold;">🗺️ Apri Posizione Plesso su Google Maps</a>`;
+      if (latestGpsFix) {
+        renderLiveGpsStatus(document.getElementById('gps-status-box'), {
+          coords: { latitude: latestGpsFix.lat, longitude: latestGpsFix.lon, accuracy: latestGpsFix.accuracy }
+        });
+      }
+    }
+
+    function applyPunchWithFix(userLat, userLon, accuracy, isAutoTriggered = false) {
+      const statusBox = document.getElementById('gps-status-box');
+      const empId = Number(document.getElementById('gps-emp-select').value);
+      const emp = appState.employees.find(e => e.id === empId);
+      if (!emp) return;
+      const pName = (emp.plesso === 'L. Pietrobono') ? 'Pietrobono' : (emp.plesso || 'Pietrobono');
+      const cfg = appState.plessiGps[pName] || DEFAULT_PLESSI_GPS['Pietrobono'];
+
+      const dist = haversineDistanceMeters(userLat, userLon, Number(cfg.lat), Number(cfg.lon));
+      const isInside = dist <= Number(cfg.radius);
+      const allowOutside = document.getElementById('gps-allow-outside').checked;
+
+      if (!isInside && !allowOutside) {
+        statusBox.classList.remove('hidden');
+        statusBox.style.background = '#f4cccc';
+        statusBox.style.border = '1px solid #990000';
+        const userMapUrl = buildGoogleMapsUrl(userLat.toFixed(6), userLon.toFixed(6));
+        statusBox.innerHTML = `
+          <strong>❌ Timbratura bloccata — Fuori dal raggio del plesso "${pName}"!</strong><br>
+          Distanza rilevata: <strong>${dist} m</strong> (Massimo consentito: <strong>${cfg.radius} m</strong>, precisione GPS: ±${accuracy} m) · <a href="${userMapUrl}" target="_blank" rel="noopener noreferrer" style="color:#990000;font-weight:bold;">🗺️ Vedi dove ti trovi</a><br>
+          <em>Spunta l'opzione "Consenti registrazione anche se fuori raggio" se si tratta di servizio esterno autorizzato.</em>
+        `;
+        return;
+      }
+
+      const now = new Date();
+      const mIdx = now.getMonth();
+      const day = now.getDate();
+      const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const key = `${empId}_${mIdx}`;
+      if (!appState.records[key]) {
+        appState.records[key] = buildDefaultMonthRecords(empId, mIdx, false);
+      }
+      const rows = appState.records[key];
+      const row = rows.find(r => r.day === day);
+
+      if (!row) {
+        statusBox.classList.remove('hidden');
+        statusBox.style.background = '#f4cccc';
+        statusBox.innerHTML = '❌ Giorno non trovato nel registro mensile corrente.';
+        return;
+      }
+
+      let pType = document.getElementById('gps-punch-type').value;
+      if (pType === 'auto') {
+        if (!row.inM || row.inM === '00:00') pType = 'inM';
+        else if (!row.outM || row.outM === '00:00') pType = 'outM';
+        else if (!row.inP || row.inP === '00:00') pType = 'inP';
+        else pType = 'outP';
+      }
+
+      row[pType] = hhmm;
+      if (row.assenza === 'Riposo/festivo') {
+        row.assenza = 'Lavoro';
+        if (!row.oreGg || row.oreGg === '00:00') row.oreGg = emp.oreGg || '07:12';
+      }
+      const badge = isInside ? `✅ GPS ${dist}m` : `⚠️ Fuori ${dist}m`;
+      row.gpsLog = `${badge} (${hhmm})`;
+      row.gpsLat = userLat.toFixed(6);
+      row.gpsLon = userLon.toFixed(6);
+
+      saveState();
+      if (!document.getElementById('view-registro').classList.contains('hidden') && currentEmpId === empId && currentMonthIdx === mIdx) {
+        renderRegistroTable();
+      }
+
+      const labelMap = { inM: 'Entrata Mattino', outM: 'Uscita Mattino', inP: 'Entrata Pomeriggio', outP: 'Uscita Pomeriggio' };
+      statusBox.classList.remove('hidden');
+      statusBox.style.background = isInside ? '#d9ead3' : '#fff2cc';
+      statusBox.style.border = isInside ? '1px solid #38761d' : '1px solid #bf9000';
+      const userMapUrl = buildGoogleMapsUrl(userLat.toFixed(6), userLon.toFixed(6));
+      statusBox.innerHTML = `
+        <strong>${isAutoTriggered ? '⚡ Timbratura automatica all\'aggancio GPS completata!' : (isInside ? '✅ Timbratura registrata con successo!' : '⚠️ Timbratura registrata (fuori sede)')}</strong><br>
+        Dipendente: <strong>${emp.full}</strong> — Plesso: <strong>${pName}</strong><br>
+        Turno: <strong>${labelMap[pType]}</strong> alle ore <strong>${hhmm}</strong> (Distanza dal plesso: <strong>${dist} m</strong>)<br>
+        <a href="${userMapUrl}" target="_blank" rel="noopener noreferrer" style="color:#1f4e78;font-weight:bold;">🗺️ Apri posizione esatta della timbratura su Google Maps</a>
+      `;
+    }
+
+    function executeGpsPunch() {
+      ensurePlessiGps();
+      if (latestGpsFix && (Date.now() - latestGpsFix.ts) < 15000) {
+        applyPunchWithFix(latestGpsFix.lat, latestGpsFix.lon, latestGpsFix.accuracy, false);
+        return;
+      }
+      const statusBox = document.getElementById('gps-status-box');
+      statusBox.classList.remove('hidden');
+      statusBox.style.background = '#fff2cc';
+      statusBox.style.border = '1px solid #bf9000';
+      statusBox.innerHTML = '⏳ Rilevamento posizione GPS in corso... Consenti l\'accesso alla posizione sul dispositivo.';
+
+      if (!navigator.geolocation) {
+        statusBox.style.background = '#f4cccc';
+        statusBox.style.border = '1px solid #990000';
+        statusBox.innerHTML = '❌ Il browser o dispositivo in uso non supporta la geolocalizzazione GPS.';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          renderLiveGpsStatus(statusBox, pos);
+          applyPunchWithFix(pos.coords.latitude, pos.coords.longitude, Math.round(pos.coords.accuracy || 0), false);
+        },
+        (err) => {
+          statusBox.style.background = '#f4cccc';
+          statusBox.style.border = '1px solid #990000';
+          statusBox.innerHTML = `❌ Impossibile ottenere la posizione GPS (${err.message}). Assicurati di aver attivato la localizzazione e aperto la pagina via HTTPS.`;
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function executeManualPunch() {
+      const statusBox = document.getElementById('gps-status-box');
+      const empId = Number(document.getElementById('gps-emp-select').value);
+      const emp = appState.employees.find(e => e.id === empId);
+      if (!emp) return;
+      const pName = (emp.plesso === 'L. Pietrobono') ? 'Pietrobono' : (emp.plesso || 'Pietrobono');
+
+      const now = new Date();
+      const mIdx = now.getMonth();
+      const day = now.getDate();
+      const customTime = (document.getElementById('gps-custom-time') && document.getElementById('gps-custom-time').value) || '';
+      const hhmm = customTime ? customTime : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const key = `${empId}_${mIdx}`;
+      if (!appState.records[key]) {
+        appState.records[key] = buildDefaultMonthRecords(empId, mIdx, false);
+      }
+      const rows = appState.records[key];
+      const row = rows.find(r => r.day === day);
+
+      if (!row) {
+        statusBox.classList.remove('hidden');
+        statusBox.style.background = '#f4cccc';
+        statusBox.style.border = '1px solid #990000';
+        statusBox.innerHTML = '❌ Giorno non trovato nel registro mensile corrente.';
+        return;
+      }
+
+      let pType = document.getElementById('gps-punch-type').value;
+      if (pType === 'auto') {
+        if (!row.inM || row.inM === '00:00') pType = 'inM';
+        else if (!row.outM || row.outM === '00:00') pType = 'outM';
+        else if (!row.inP || row.inP === '00:00') pType = 'inP';
+        else pType = 'outP';
+      }
+
+      row[pType] = hhmm;
+      if (row.assenza === 'Riposo/festivo') {
+        row.assenza = 'Lavoro';
+        if (!row.oreGg || row.oreGg === '00:00') row.oreGg = emp.oreGg || '07:12';
+      }
+      row.gpsLog = `🕒 Manuale (${hhmm})`;
+
+      saveState();
+      if (!document.getElementById('view-registro').classList.contains('hidden') && currentEmpId === empId && currentMonthIdx === mIdx) {
+        renderRegistroTable();
+      }
+
+      const labelMap = { inM: 'Entrata Mattino', outM: 'Uscita Mattino', inP: 'Entrata Pomeriggio', outP: 'Uscita Pomeriggio' };
+      statusBox.classList.remove('hidden');
+      statusBox.style.background = '#d9ead3';
+      statusBox.style.border = '1px solid #38761d';
+      statusBox.innerHTML = `
+        <strong>✅ Timbratura registrata (modalità senza GPS)!</strong><br>
+        Dipendente: <strong>${emp.full}</strong> — Plesso: <strong>${pName}</strong><br>
+        Turno: <strong>${labelMap[pType]}</strong> alle ore <strong>${hhmm}</strong>
+      `;
+    }
+
+    function buildGoogleMapsUrl(lat, lon) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(lat + ',' + lon)}`;
+    }
+
+    function updatePlessoMapLink(idx) {
+      const urlInp = document.getElementById(`plesso-url-${idx}`);
+      const linkEl = document.getElementById(`plesso-map-link-${idx}`);
+      if (urlInp && linkEl && urlInp.value.trim()) {
+        linkEl.href = urlInp.value.trim();
+      }
+    }
+
+    function openGpsPlessiModal() {
+      ensurePlessiGps();
+      const tbody = document.getElementById('gps-plessi-tbody');
+      tbody.innerHTML = Object.keys(appState.plessiGps).map((name, idx) => {
+        const cfg = appState.plessiGps[name];
+        const mapUrl = getPlessoMapUrl(name, cfg);
+        return `
+          <tr>
+            <td style="border:1px solid #000;padding:4px;font-weight:bold;text-align:left;background:#f2f4f8;">${name}</td>
+            <td style="border:1px solid #000;padding:3px;"><input id="plesso-url-${idx}" data-plesso="${name}" type="url" value="${mapUrl}" oninput="updatePlessoMapLink(${idx})" style="width:245px;padding:3px;font-size:11px;" /></td>
+            <td style="border:1px solid #000;padding:3px;"><input id="plesso-rad-${idx}" type="number" step="10" value="${cfg.radius}" style="width:60px;text-align:center;padding:3px;" /></td>
+            <td style="border:1px solid #000;padding:3px;"><a id="plesso-map-link-${idx}" href="${mapUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#e8eef5;color:#1f4e78;border:1px solid #1f4e78;border-radius:3px;padding:3px 6px;font-weight:bold;text-decoration:none;font-size:11px;">🗺️ Apri Mappa</a></td>
+            <td style="border:1px solid #000;padding:3px;"><button class="btn-top" style="font-size:11px;padding:3px 6px;" onclick="captureCurrentPosForPlesso(${idx})">📍 Usa posizione</button></td>
+          </tr>
+        `;
+      }).join('');
+      document.getElementById('gps-plessi-modal').classList.remove('hidden');
+    }
+
+    function closeGpsPlessiModal() {
+      document.getElementById('gps-plessi-modal').classList.add('hidden');
+    }
+
+    function captureCurrentPosForPlesso(idx) {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lon = pos.coords.longitude.toFixed(6);
+          appState.plessiGps[Object.keys(appState.plessiGps)[idx]].lat = parseFloat(lat);
+          appState.plessiGps[Object.keys(appState.plessiGps)[idx]].lon = parseFloat(lon);
+          const urlInp = document.getElementById(`plesso-url-${idx}`);
+          if (urlInp) {
+            urlInp.value = buildGoogleMapsUrl(lat, lon);
+            updatePlessoMapLink(idx);
+          }
+        },
+        (err) => {
+          alert('Impossibile rilevare la posizione GPS: ' + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    function saveGpsPlessi() {
+      ensurePlessiGps();
+      const names = Object.keys(appState.plessiGps);
+      names.forEach((name, idx) => {
+        const urlVal = document.getElementById(`plesso-url-${idx}`).value.trim();
+        const rad = parseInt(document.getElementById(`plesso-rad-${idx}`).value, 10);
+        if (urlVal) appState.plessiGps[name].mapUrl = urlVal;
+        if (!isNaN(rad) && rad > 0) appState.plessiGps[name].radius = rad;
+      });
+      saveState();
+      closeGpsPlessiModal();
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem('ata_presenze_ic2_frosinone_v2');
+      if (saved) {
+        try {
+          appState = JSON.parse(saved);
+        } catch (e) { console.error(e); }
+      }
+      ensurePlessiGps();
+      Object.keys(DEFAULT_PLESSI_GPS).forEach(k => {
+        if (appState.plessiGps[k] && DEFAULT_PLESSI_GPS[k].mapUrl) {
+          appState.plessiGps[k].mapUrl = DEFAULT_PLESSI_GPS[k].mapUrl;
+        }
+      });
+      if (!appState.records['1_8'] && appState.employees.some(e => e.id === 1)) {
+        appState.records['1_8'] = buildDefaultMonthRecords(1, 8, true);
+      }
+    }
+
+
+    const TABLET_CHANNEL_NAME = 'ata_presenze_tablet_sync_v1';
+    let tabletChannel = null;
+    let isApplyingRemoteSync = false;
+
+    function initTabletSyncChannel() {
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          tabletChannel = new BroadcastChannel(TABLET_CHANNEL_NAME);
+          tabletChannel.onmessage = (event) => {
+            if (!event.data || event.data.type !== 'state_update' || !event.data.payload) return;
+            mergeIncomingState(event.data.payload, 'Sincronizzato in tempo reale da un altro tablet/scheda');
+          };
+        } catch (e) {}
+      }
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'ata_presenze_ic2_frosinone_v2' && e.newValue && !isApplyingRemoteSync) {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            mergeIncomingState(parsed, 'Aggiornato automaticamente da memoria condivisa');
+          } catch (err) {}
+        }
+      });
+    }
+
+    function broadcastStateToTablets() {
+      if (isApplyingRemoteSync) return;
+      if (tabletChannel) {
+        try {
+          tabletChannel.postMessage({ type: 'state_update', payload: appState, ts: Date.now() });
+        } catch (e) {}
+      }
+    }
+
+    function mergeIncomingState(incoming, sourceMsg = 'Dati uniti con successo') {
+      if (!incoming || typeof incoming !== 'object') return;
+      isApplyingRemoteSync = true;
+      try {
+        if (incoming.activeTabletPlesso !== undefined && !appState.activeTabletPlesso) {
+          appState.activeTabletPlesso = incoming.activeTabletPlesso;
+        }
+        if (Array.isArray(incoming.employees)) {
+          const byId = new Map((appState.employees || []).map(e => [e.id, e]));
+          incoming.employees.forEach(incEmp => {
+            if (!byId.has(incEmp.id)) {
+              byId.set(incEmp.id, incEmp);
+            } else {
+              const cur = byId.get(incEmp.id);
+              byId.set(incEmp.id, { ...cur, ...incEmp });
+            }
+          });
+          appState.employees = Array.from(byId.values());
+        }
+        if (incoming.records && typeof incoming.records === 'object') {
+          if (!appState.records) appState.records = {};
+          Object.entries(incoming.records).forEach(([key, incRows]) => {
+            if (!Array.isArray(incRows)) return;
+            if (!Array.isArray(appState.records[key])) {
+              appState.records[key] = incRows;
+            } else {
+              const curRows = appState.records[key];
+              incRows.forEach((incR, idx) => {
+                const targetR = curRows.find(r => r.day === incR.day) || curRows[idx];
+                if (!targetR) return;
+                ['inM', 'outM', 'inP', 'outP', 'permesso', 'straord', 'assenza', 'oreGg', 'gpsLog', 'gpsLat', 'gpsLon'].forEach(f => {
+                  if (incR[f] && incR[f] !== '00:00' && (f !== 'assenza' || incR[f] !== 'Lavoro')) {
+                    targetR[f] = incR[f];
+                  }
+                });
+              });
+            }
+          });
+        }
+        localStorage.setItem('ata_presenze_ic2_frosinone_v2', JSON.stringify(appState));
+        renderGlobalTotals();
+        if (!document.getElementById('view-indice').classList.contains('hidden')) renderIndice();
+        if (!document.getElementById('view-registro').classList.contains('hidden')) renderRegistroTable();
+        const fb = document.getElementById('tablet-sync-feedback');
+        if (fb) fb.textContent = `✅ ${sourceMsg} (${new Date().toLocaleTimeString('it-IT')})`;
+      } finally {
+        isApplyingRemoteSync = false;
+      }
+    }
+
+    function openTabletShareModal() {
+      const sel = document.getElementById('tablet-plesso-select');
+      sel.value = appState.activeTabletPlesso || '';
+      updateTabletPlessoSummary();
+      document.getElementById('tablet-sync-feedback').textContent = '';
+      document.getElementById('tablet-share-modal').classList.remove('hidden');
+    }
+
+    function closeTabletShareModal() {
+      document.getElementById('tablet-share-modal').classList.add('hidden');
+    }
+
+    function updateTabletPlessoSummary() {
+      const p = document.getElementById('tablet-plesso-select').value;
+      const sum = document.getElementById('tablet-plesso-summary');
+      if (!p) {
+        sum.textContent = 'Modalità completa attiva: tutti i plessi e tutti i dipendenti sono disponibili sulla finestra GPS.';
+      } else {
+        const count = appState.employees.filter(e => ((e.plesso === 'L. Pietrobono') ? 'Pietrobono' : (e.plesso || 'Pietrobono')) === p).length;
+        sum.innerHTML = `Postazione impostata sul plesso <strong>${p}</strong> (${count} dipendenti associati). All'apertura della timbratura GPS verrà preselezionato il plesso e agganciata la posizione.`;
+      }
+    }
+
+    function applyTabletPlessoMode() {
+      appState.activeTabletPlesso = document.getElementById('tablet-plesso-select').value || '';
+      saveState();
+      updateTabletPlessoSummary();
+      document.getElementById('tablet-sync-feedback').textContent = appState.activeTabletPlesso
+        ? `✅ Tablet impostato sul plesso "${appState.activeTabletPlesso}".`
+        : '✅ Modalità completa riattivata.';
+    }
+
+    function encodeUtf8Base64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let bin = '';
+      bytes.forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+
+    function decodeUtf8Base64(b64) {
+      const bin = atob(b64.trim());
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function generateTabletSyncCode() {
+      const compactPayload = {
+        anno1: appState.anno1,
+        anno2: appState.anno2,
+        activeTabletPlesso: appState.activeTabletPlesso || '',
+        employees: appState.employees,
+        records: appState.records
+      };
+      const codeStr = encodeUtf8Base64(JSON.stringify(compactPayload));
+      document.getElementById('tablet-sync-code-box').value = codeStr;
+      document.getElementById('tablet-sync-feedback').textContent = '✅ Codice di condivisione generato. Copialo e incollalo sull\'altro tablet.';
+    }
+
+    function copyTabletSyncCode() {
+      const box = document.getElementById('tablet-sync-code-box');
+      if (!box.value.trim()) generateTabletSyncCode();
+      box.select();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(box.value).then(() => {
+          document.getElementById('tablet-sync-feedback').textContent = '📋 Codice copiato negli appunti.';
+        }).catch(() => {});
+      }
+    }
+
+    function generateTabletShareLink() {
+      const compactPayload = {
+        anno1: appState.anno1,
+        anno2: appState.anno2,
+        activeTabletPlesso: appState.activeTabletPlesso || '',
+        employees: appState.employees,
+        records: appState.records
+      };
+      const codeStr = encodeUtf8Base64(JSON.stringify(compactPayload));
+      const baseUrl = window.location.href.split('#')[0];
+      const fullLink = `${baseUrl}#ata_sync=${encodeURIComponent(codeStr)}`;
+      document.getElementById('tablet-sync-code-box').value = fullLink;
+      document.getElementById('tablet-sync-feedback').textContent = '🔗 Link di condivisione generato! Invialo agli altri tablet (WhatsApp, email, Drive) o copialo.';
+    }
+
+    function checkUrlHashSync() {
+      const hash = window.location.hash || '';
+      if (hash.startsWith('#ata_sync=')) {
+        try {
+          const encoded = decodeURIComponent(hash.slice('#ata_sync='.length));
+          const decoded = JSON.parse(decodeUtf8Base64(encoded));
+          mergeIncomingState(decoded, 'Dati importati automaticamente dal link condiviso');
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (e) {
+          console.error('Errore lettura link sync:', e);
+        }
+      }
+    }
+
+    function applyTabletSyncCode() {
+      let raw = document.getElementById('tablet-sync-code-box').value.trim();
+      if (raw.includes('#ata_sync=')) {
+        raw = decodeURIComponent(raw.split('#ata_sync=')[1]);
+      }
+      if (!raw) {
+        document.getElementById('tablet-sync-feedback').textContent = '⚠️ Incolla prima un codice valido.';
+        return;
+      }
+      try {
+        const decoded = JSON.parse(decodeUtf8Base64(raw));
+        mergeIncomingState(decoded, 'Timbrature e dati dei tablet uniti con successo');
+      } catch (e) {
+        document.getElementById('tablet-sync-feedback').textContent = '❌ Codice non valido o corrotto.';
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('ata_presenze_ic2_frosinone_v2', JSON.stringify(appState));
+      renderGlobalTotals();
+      broadcastStateToTablets();
+    }
+
+    function saveGlobalHeaders() {
+      appState.hdrLeft = document.getElementById('hdr-left-txt').value;
+      appState.hdrCenter = document.getElementById('hdr-center-txt').value;
+      appState.hdrRight = document.getElementById('hdr-right-txt').value;
+      document.getElementById('center-school-title').textContent = appState.hdrCenter;
+      saveState();
+    }
+
+    /* NUOVO ANNO SCOLASTICO: modale dedicata */
+    function nuovoAnnoScolastico() {
+      document.getElementById('new-year-input').value = Number(appState.anno1) + 1;
+      document.getElementById('new-year-modal').classList.remove('hidden');
+    }
+    function closeNewYearModal() {
+      document.getElementById('new-year-modal').classList.add('hidden');
+    }
+    function confirmNewYear() {
+      const parsedA1 = parseInt(document.getElementById('new-year-input').value, 10);
+      if (isNaN(parsedA1)) return;
+      appState.anno1 = parsedA1;
+      appState.anno2 = parsedA1 + 1;
+      appState.records = {};
+      saveState();
+      closeNewYearModal();
+      renderIndice();
+      if (!document.getElementById('view-scheda').classList.contains('hidden')) openEmployee(currentEmpId);
+      if (!document.getElementById('view-registro').classList.contains('hidden')) openMonth(currentMonthIdx);
+    }
+
+    /* RESET TOTALE: modale dedicata */
+    function resetTuttoDaZero() {
+      document.getElementById('reset-modal').classList.remove('hidden');
+    }
+    function closeResetModal() {
+      document.getElementById('reset-modal').classList.add('hidden');
+    }
+    function executeReset(mode) {
+      if (mode === 1) {
+        appState.employees = JSON.parse(JSON.stringify(INITIAL_EMPLOYEES));
+        appState.records = {};
+      } else if (mode === 2) {
+        appState.employees = [];
+        appState.records = {};
+      }
+      saveState();
+      closeResetModal();
+      showView('indice');
+    }
+
+    function timeToMinutes(t) {
+      if (!t || !t.includes(':')) return 0;
+      const [h, m] = t.split(':').map(Number);
+      if (isNaN(h) || isNaN(m)) return 0;
+      return h * 60 + m;
+    }
+
+    function minutesToTime(mins) {
+      const neg = mins < 0;
+      const abs = Math.abs(Math.round(mins));
+      const h = Math.floor(abs / 60);
+      const m = abs % 60;
+      return `${neg ? '-' : ''}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function buildDefaultMonthRecords(empId, monthIdx, withSampleExtras = false) {
+      const emp = appState.employees.find(e => e.id === empId) || { sabato: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' };
+      const mInfo = MONTHS_INFO.find(m => m.idx === monthIdx);
+      const year = Number(appState.anno1) + mInfo.yearOffset;
+      const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+      const rows = [];
+
+      const stdOreGg = emp.oreGg || '07:12';
+      const stdIn = emp.stdIn || '07:30';
+      const stdOut = emp.stdOut || '14:42';
+      const sabLav = emp.sabato === 'SI';
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dt = new Date(year, monthIdx, d);
+        const dow = dt.getDay();
+        const isRest = (dow === 0) || (dow === 6 && !sabLav);
+
+        let row = {
+          day: d,
+          dowName: DAY_NAMES[dow],
+          oreGg: isRest ? '00:00' : stdOreGg,
+          assenza: isRest ? 'Riposo/festivo' : 'Lavoro',
+          inM: isRest ? '00:00' : stdIn,
+          outM: isRest ? '00:00' : stdOut,
+          inP: '00:00',
+          outP: '00:00',
+          permesso: '00:00',
+          straord: '00:00'
+        };
+
+        if (withSampleExtras && monthIdx === 8) {
+          if (d === 8)  { row.inP = '15:12'; row.outP = '15:30'; }
+          if (d === 10) { row.inP = '15:12'; row.outP = '15:20'; }
+          if (d === 11) { row.inP = '15:12'; row.outP = '15:50'; row.assenza = 'Legge104'; }
+          if (d === 17) { row.inP = '15:12'; row.outP = '15:50'; }
+          if (d === 18) { row.inP = '15:12'; row.outP = '15:50'; row.straord = '00:38'; }
+          if (d === 22) { row.inP = '15:12'; row.outP = '15:50'; row.straord = '00:38'; }
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function computeRowCalc(r) {
+      const mIn = timeToMinutes(r.inM);
+      const mOut = timeToMinutes(r.outM);
+      const pIn = timeToMinutes(r.inP);
+      const pOut = timeToMinutes(r.outP);
+      const target = timeToMinutes(r.oreGg);
+      const perm = timeToMinutes(r.permesso);
+
+      const lavM = mOut > mIn ? (mOut - mIn) : 0;
+      const lavP = pOut > pIn ? (pOut - pIn) : 0;
+      const totLav = lavM + lavP;
+      const diff = (totLav + perm) - target;
+
+      return {
+        lavM: minutesToTime(lavM),
+        lavP: minutesToTime(lavP),
+        totLav: minutesToTime(totLav),
+        saldoAtt: diff > 0 ? minutesToTime(diff) : '',
+        saldoPass: diff < 0 ? minutesToTime(Math.abs(diff)) : ''
+      };
+    }
+
+    function showView(viewName) {
+      document.getElementById('view-indice').classList.add('hidden');
+      document.getElementById('view-scheda').classList.add('hidden');
+      document.getElementById('view-registro').classList.add('hidden');
+      document.getElementById(`view-${viewName}`).classList.remove('hidden');
+      if (viewName === 'indice') renderIndice();
+    }
+
+    function renderIndice() {
+      document.getElementById('hdr-left-txt').value = appState.hdrLeft || 'Registro Foglio Presenze per anno scolastico';
+      document.getElementById('hdr-center-txt').value = appState.hdrCenter || 'ISTITUTO COMPRENSIVO 2° FROSINONE';
+      document.getElementById('hdr-right-txt').value = appState.hdrRight || 'creato da Eleonora Naddei';
+      document.getElementById('center-school-title').textContent = appState.hdrCenter || 'ISTITUTO COMPRENSIVO 2° FROSINONE';
+      document.getElementById('indice-anno1').value = appState.anno1;
+      document.getElementById('indice-anno2').value = appState.anno2;
+
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const filtered = appState.employees
+        .filter(e =>
+          e.full.toLowerCase().includes(q) || e.qualShort.toLowerCase().includes(q) || String(e.id).includes(q)
+        )
+        .sort((a, b) => Number(a.id) - Number(b.id));
+
+      const half = Math.ceil(filtered.length / 2);
+      const leftList = filtered.slice(0, half);
+      const rightList = filtered.slice(half);
+
+      const makeRows = (list) => {
+        if (!list.length) return `<tr><td colspan="5" style="text-align:center;padding:12px;color:#666;">Nessun dipendente in elenco</td></tr>`;
+        return list.map(emp => `
+          <tr>
+            <td class="col-num">${emp.id}</td>
+            <td class="col-name">
+              <input class="cell-edit-inp" value="${emp.full.replace(/"/g, '&quot;')}"
+                     onchange="inlineEditEmployee(${emp.id}, 'full', this.value)" />
+            </td>
+            <td class="col-qual">
+              <input class="cell-edit-inp" value="${emp.qualShort.replace(/"/g, '&quot;')}"
+                     onchange="inlineEditEmployee(${emp.id}, 'qualShort', this.value)" />
+            </td>
+            <td class="col-btn">
+              <button class="emp-btn" onclick="openEmployee(${emp.id})">
+                <span>${emp.short}</span>
+                <span class="home-icon">🏠</span>
+              </button>
+            </td>
+            <td class="col-del">
+              <button class="btn-del-emp" title="Elimina dipendente" onclick="deleteEmployeeById(${emp.id})">✕</button>
+            </td>
+          </tr>
+        `).join('');
+      };
+
+      document.getElementById('tbody-left').innerHTML = makeRows(leftList);
+      document.getElementById('tbody-right').innerHTML = makeRows(rightList);
+      renderGlobalTotals();
+    }
+
+    function inlineEditEmployee(empId, field, value) {
+      const emp = appState.employees.find(e => e.id === empId);
+      if (!emp) return;
+      const v = value.trim();
+      if (!v) return;
+      emp[field] = v;
+      if (field === 'full') {
+        emp.short = v.split(' ')[0];
+      }
+      if (field === 'qualShort') {
+        if (v.toLowerCase().includes('amm')) emp.qualFull = 'Assistente Amministrativo';
+        else if (v.toLowerCase().includes('coll')) emp.qualFull = 'Collaboratore Scolastico';
+        else if (v.toLowerCase().includes('dsga') || v.toLowerCase().includes('d.s.g.a')) emp.qualFull = 'Direttore S.G.A.';
+        else emp.qualFull = v;
+      }
+      saveState();
+      renderIndice();
+    }
+
+    function deleteEmployeeById(empId) {
+      const emp = appState.employees.find(e => e.id === empId);
+      if (!emp) return;
+      
+      appState.employees = appState.employees.filter(e => e.id !== empId);
+      // Rinumerazione progressiva 1..N
+      const oldToNewId = {};
+      appState.employees.forEach((e, index) => {
+        oldToNewId[e.id] = index + 1;
+        e.id = index + 1;
+      });
+      const newRecords = {};
+      Object.entries(appState.records).forEach(([key, val]) => {
+        const [oldIdStr, mStr] = key.split('_');
+        const oldId = Number(oldIdStr);
+        if (oldToNewId[oldId]) {
+          newRecords[`${oldToNewId[oldId]}_${mStr}`] = val;
+        }
+      });
+      appState.records = newRecords;
+      saveState();
+      renderIndice();
+    }
+
+    function deleteCurrentEmployee() {
+      deleteEmployeeById(currentEmpId);
+      showView('indice');
+    }
+
+    function renderGlobalTotals() {
+      const counts = {};
+      CAUSALI.forEach(c => counts[c] = 0);
+      let extraMins = 0;
+
+      Object.values(appState.records).forEach(monthRows => {
+        monthRows.forEach(r => {
+          if (counts[r.assenza] !== undefined) counts[r.assenza]++;
+          extraMins += timeToMinutes(r.straord);
+        });
+      });
+
+      const displayCausali = CAUSALI.filter(c => c !== 'Lutto');
+      document.getElementById('global-totals-list').innerHTML = displayCausali.map(c => `
+        <div class="total-row">
+          <div class="total-label">${c}</div>
+          <div class="total-val">${counts[c]}</div>
+        </div>
+      `).join('');
+      document.getElementById('global-extra-hours').textContent = minutesToTime(extraMins);
+    }
+
+    function addEmployee() {
+      document.getElementById('new-emp-full').value = '';
+      document.getElementById('new-emp-qual-short').value = 'Coll.Scolastico';
+      document.getElementById('new-emp-qual-full').value = 'Collaboratore Scolastico';
+      document.getElementById('new-emp-plesso').value = 'Pietrobono';
+      document.getElementById('new-emp-nomina').value = 'Ruolo';
+      document.getElementById('add-emp-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('new-emp-full').focus(), 50);
+    }
+
+    function closeAddEmpModal() {
+      document.getElementById('add-emp-modal').classList.add('hidden');
+    }
+
+    function syncNewEmpQualFull() {
+      const qs = document.getElementById('new-emp-qual-short').value;
+      const map = {
+        'Coll.Scolastico': 'Collaboratore Scolastico',
+        'Ass. Amm.vo': 'Assistente Amministrativo',
+        'D.S.G.A.': 'Direttore S.G.A.',
+        'Doc. altri comp': 'Docente Altri Compiti'
+      };
+      document.getElementById('new-emp-qual-full').value = map[qs] || qs;
+    }
+
+    function confirmAddEmployee() {
+      const full = document.getElementById('new-emp-full').value.trim();
+      if (!full) {
+        document.getElementById('new-emp-full').focus();
+        return;
+      }
+      const qualShort = document.getElementById('new-emp-qual-short').value;
+      const qualFull = document.getElementById('new-emp-qual-full').value.trim() || qualShort;
+      const plesso = document.getElementById('new-emp-plesso').value || 'Pietrobono';
+      const nomina = document.getElementById('new-emp-nomina').value;
+
+      const newId = appState.employees.length + 1;
+      const shortName = full.split(' ')[0];
+      appState.employees.push({
+        id: newId,
+        short: shortName,
+        full: full,
+        qualShort: qualShort,
+        qualFull: qualFull,
+        plesso: plesso,
+        nomina: nomina,
+        ferieAP: 0,
+        oreRecAP: '0:00:00',
+        sabato: 'NO',
+        rientri: 'NO',
+        oreGg: '07:12',
+        stdIn: '07:30',
+        stdOut: '14:42'
+      });
+      document.getElementById('searchInput').value = '';
+      saveState();
+      closeAddEmpModal();
+      renderIndice();
+    }
+
+
+    const DOW_ORDER = [1, 2, 3, 4, 5, 6, 0]; // lun, mar, mer, gio, ven, sab, dom
+
+    function getDefaultDaySchedule(emp, dow, weekIdx = 0) {
+      const sabLav = emp.sabato === 'SI';
+      const isRest = (dow === 0) || (dow === 6 && !sabLav);
+      return {
+        oreGg: isRest ? '00:00' : (emp.oreGg || '07:12'),
+        inM: isRest ? '00:00' : (emp.stdIn || '07:30'),
+        outM: isRest ? '00:00' : (emp.stdOut || '14:42'),
+        inP: '00:00',
+        outP: '00:00'
+      };
+    }
+
+    function ensureEmployeeWeeklySchedule(emp) {
+      if (!emp.weekCycle) emp.weekCycle = 1;
+      if (!emp.weeklySchedule || typeof emp.weeklySchedule !== 'object') {
+        emp.weeklySchedule = {};
+      }
+      for (let w = 0; w < 4; w++) {
+        if (!emp.weeklySchedule[w]) emp.weeklySchedule[w] = {};
+        for (let d = 0; d < 7; d++) {
+          if (!emp.weeklySchedule[w][d]) {
+            emp.weeklySchedule[w][d] = getDefaultDaySchedule(emp, d, w);
+          }
+        }
+      }
+    }
+
+    function renderWeeklyScheduleEditor(emp) {
+      ensureEmployeeWeeklySchedule(emp);
+      const cycle = Number(emp.weekCycle) || 1;
+      document.getElementById('scheda-week-cycle').value = String(cycle);
+
+      let html = '';
+      for (let w = 0; w < cycle; w++) {
+        html += `
+          <div style="margin-top:${w === 0 ? '2px' : '8px'};border:1px solid #444;background:#fff;border-radius:3px;padding:4px;">
+            <div style="font-weight:bold;font-size:11px;background:#d9e1f2;padding:3px 6px;border-bottom:1px solid #999;margin-bottom:4px;">
+              Settimana ${w + 1}${cycle > 1 ? ` (su ${cycle})` : ''}
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:11px;text-align:center;">
+              <thead>
+                <tr style="background:#9bc2e6;">
+                  <th style="border:1px solid #000;padding:3px;">Giorno</th>
+                  <th style="border:1px solid #000;padding:3px;">Ore gg</th>
+                  <th style="border:1px solid #000;padding:3px;">Entrata M</th>
+                  <th style="border:1px solid #000;padding:3px;">Uscita M</th>
+                  <th style="border:1px solid #000;padding:3px;">Entrata P</th>
+                  <th style="border:1px solid #000;padding:3px;">Uscita P</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        DOW_ORDER.forEach(dow => {
+          const slot = emp.weeklySchedule[w][dow];
+          html += `
+            <tr>
+              <td style="border:1px solid #000;padding:2px 4px;font-weight:bold;background:#e2efda;text-transform:capitalize;">${DAY_NAMES[dow]}</td>
+              <td style="border:1px solid #000;padding:2px;"><input type="text" value="${slot.oreGg}" style="width:46px;text-align:center;font-weight:bold;border:1px solid #ccc;" onchange="updateWeeklySlot(${w},${dow},'oreGg',this.value)" /></td>
+              <td style="border:1px solid #000;padding:2px;"><input type="text" value="${slot.inM}" style="width:46px;text-align:center;border:1px solid #ccc;" onchange="updateWeeklySlot(${w},${dow},'inM',this.value)" /></td>
+              <td style="border:1px solid #000;padding:2px;"><input type="text" value="${slot.outM}" style="width:46px;text-align:center;border:1px solid #ccc;" onchange="updateWeeklySlot(${w},${dow},'outM',this.value)" /></td>
+              <td style="border:1px solid #000;padding:2px;"><input type="text" value="${slot.inP}" style="width:46px;text-align:center;border:1px solid #ccc;" onchange="updateWeeklySlot(${w},${dow},'inP',this.value)" /></td>
+              <td style="border:1px solid #000;padding:2px;"><input type="text" value="${slot.outP}" style="width:46px;text-align:center;border:1px solid #ccc;" onchange="updateWeeklySlot(${w},${dow},'outP',this.value)" /></td>
+            </tr>
+          `;
+        });
+
+        html += `</tbody></table></div>`;
+      }
+
+      document.getElementById('weekly-schedule-container').innerHTML = html;
+    }
+
+    function changeWeekCycle() {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      if (!emp) return;
+      ensureEmployeeWeeklySchedule(emp);
+      emp.weekCycle = Number(document.getElementById('scheda-week-cycle').value) || 1;
+      saveState();
+      renderWeeklyScheduleEditor(emp);
+    }
+
+    function updateWeeklySlot(weekIdx, dow, field, val) {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      if (!emp) return;
+      ensureEmployeeWeeklySchedule(emp);
+      emp.weeklySchedule[weekIdx][dow][field] = (val || '00:00').trim();
+      saveState();
+    }
+
+    function applyWeeklyScheduleToMonth() {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      if (!emp) return;
+      ensureEmployeeWeeklySchedule(emp);
+      const cycle = Number(emp.weekCycle) || 1;
+      const mInfo = MONTHS_INFO.find(m => m.idx === currentMonthIdx);
+      const year = Number(appState.anno1) + mInfo.yearOffset;
+      const key = `${currentEmpId}_${currentMonthIdx}`;
+      if (!appState.records[key]) {
+        appState.records[key] = buildDefaultMonthRecords(currentEmpId, currentMonthIdx, false);
+      }
+      const rows = appState.records[key];
+
+      rows.forEach(r => {
+        const dt = new Date(year, currentMonthIdx, r.day);
+        const dow = dt.getDay();
+        const weekOfMonthIdx = Math.floor((r.day - 1) / 7);
+        const wSlotIdx = weekOfMonthIdx % cycle;
+        const slot = emp.weeklySchedule[wSlotIdx][dow];
+
+        const hasHours = timeToMinutes(slot.oreGg) > 0 || timeToMinutes(slot.inM) > 0 || timeToMinutes(slot.outM) > 0 || timeToMinutes(slot.inP) > 0 || timeToMinutes(slot.outP) > 0;
+        r.oreGg = slot.oreGg || '00:00';
+        r.inM = slot.inM || '00:00';
+        r.outM = slot.outM || '00:00';
+        r.inP = slot.inP || '00:00';
+        r.outP = slot.outP || '00:00';
+        r.assenza = hasHours ? 'Lavoro' : 'Riposo/festivo';
+      });
+
+      saveState();
+      renderRegistroTable();
+    }
+
+    function openEmployee(empId) {
+      currentEmpId = empId;
+      const emp = appState.employees.find(e => e.id === empId);
+      if (!emp) return;
+
+      document.getElementById('scheda-anno1').value = appState.anno1;
+      document.getElementById('scheda-anno2').value = appState.anno2;
+      document.getElementById('scheda-ferie-ap').value = emp.ferieAP ?? 0;
+      document.getElementById('scheda-ore-rec').value = emp.oreRecAP || '0:00:00';
+      document.getElementById('scheda-nome').value = emp.full;
+      document.getElementById('scheda-short').value = emp.short;
+      document.getElementById('scheda-qual-short').value = emp.qualShort;
+      document.getElementById('scheda-qualifica').value = emp.qualFull;
+      document.getElementById('scheda-nomina').value = emp.nomina || 'Ruolo';
+      const plessoSel = document.getElementById('scheda-plesso');
+      let pVal = emp.plesso || 'Pietrobono';
+      if (pVal === 'L. Pietrobono') pVal = 'Pietrobono';
+      if (![...plessoSel.options].some(o => o.value === pVal)) {
+        const opt = document.createElement('option');
+        opt.value = pVal;
+        opt.textContent = pVal;
+        plessoSel.appendChild(opt);
+      }
+      plessoSel.value = pVal;
+      document.getElementById('scheda-sabato').value = emp.sabato || 'NO';
+      document.getElementById('scheda-rientri').value = emp.rientri || 'NO';
+      document.getElementById('scheda-ore-gg').value = emp.oreGg || '07:12';
+      document.getElementById('scheda-std-in').value = emp.stdIn || '07:30';
+      document.getElementById('scheda-std-out').value = emp.stdOut || '14:42';
+      renderWeeklyScheduleEditor(emp);
+
+      showView('scheda');
+    }
+
+    function rebuildMonthDaysForYear(empId, monthIdx, existingRows) {
+      const emp = appState.employees.find(e => e.id === empId) || { sabato: 'NO', oreGg: '07:12', stdIn: '07:30', stdOut: '14:42' };
+      const mInfo = MONTHS_INFO.find(m => m.idx === monthIdx);
+      const year = Number(appState.anno1) + mInfo.yearOffset;
+      const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+      const stdOreGg = emp.oreGg || '07:12';
+      const stdIn = emp.stdIn || '07:30';
+      const stdOut = emp.stdOut || '14:42';
+      const sabLav = emp.sabato === 'SI';
+
+      const oldByDay = {};
+      if (Array.isArray(existingRows)) {
+        existingRows.forEach(r => { oldByDay[r.day] = r; });
+      }
+
+      const rows = [];
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dt = new Date(year, monthIdx, d);
+        const dow = dt.getDay();
+        const dowName = DAY_NAMES[dow];
+        const isRest = (dow === 0) || (dow === 6 && !sabLav);
+        const prev = oldByDay[d];
+
+        if (prev) {
+          let assenza = prev.assenza;
+          let oreGg = prev.oreGg;
+          let inM = prev.inM;
+          let outM = prev.outM;
+
+          if (isRest && assenza === 'Lavoro') {
+            assenza = 'Riposo/festivo';
+            oreGg = '00:00';
+            inM = '00:00';
+            outM = '00:00';
+          } else if (!isRest && assenza === 'Riposo/festivo') {
+            assenza = 'Lavoro';
+            oreGg = stdOreGg;
+            inM = stdIn;
+            outM = stdOut;
+          }
+
+          rows.push({
+            ...prev,
+            day: d,
+            dowName: dowName,
+            oreGg: oreGg,
+            assenza: assenza,
+            inM: inM,
+            outM: outM
+          });
+        } else {
+          rows.push({
+            day: d,
+            dowName: dowName,
+            oreGg: isRest ? '00:00' : stdOreGg,
+            assenza: isRest ? 'Riposo/festivo' : 'Lavoro',
+            inM: isRest ? '00:00' : stdIn,
+            outM: isRest ? '00:00' : stdOut,
+            inP: '00:00',
+            outP: '00:00',
+            permesso: '00:00',
+            straord: '00:00'
+          });
+        }
+      }
+      return rows;
+    }
+
+    function applySchoolYearChange(newA1, newA2) {
+      const parsedA1 = parseInt(newA1, 10);
+      if (isNaN(parsedA1)) return;
+      appState.anno1 = parsedA1;
+      appState.anno2 = (newA2 !== undefined && !isNaN(parseInt(newA2, 10))) ? parseInt(newA2, 10) : (parsedA1 + 1);
+
+      // Aggiorna automaticamente giorni, giorni della settimana e riposi/feriali per tutti i fogli mensili salvati
+      Object.keys(appState.records).forEach(key => {
+        const parts = key.split('_');
+        const empId = Number(parts[0]);
+        const monthIdx = Number(parts[1]);
+        appState.records[key] = rebuildMonthDaysForYear(empId, monthIdx, appState.records[key]);
+      });
+
+      saveState();
+      document.getElementById('indice-anno1').value = appState.anno1;
+      document.getElementById('indice-anno2').value = appState.anno2;
+      document.getElementById('scheda-anno1').value = appState.anno1;
+      document.getElementById('scheda-anno2').value = appState.anno2;
+
+      if (!document.getElementById('view-registro').classList.contains('hidden')) {
+        openMonth(currentMonthIdx);
+      }
+    }
+
+    function updateSchoolYearFromIndice(fromSecondBox = false) {
+      const a1El = document.getElementById('indice-anno1');
+      const a2El = document.getElementById('indice-anno2');
+      let a1 = parseInt(a1El.value, 10);
+      let a2 = parseInt(a2El.value, 10);
+      if (fromSecondBox && !isNaN(a2)) {
+        a1 = a2 - 1;
+      } else if (!isNaN(a1)) {
+        a2 = a1 + 1;
+      }
+      applySchoolYearChange(a1, a2);
+    }
+
+    function saveSchedaMeta() {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      if (!emp) return;
+      const prevA1 = appState.anno1;
+      const prevA2 = appState.anno2;
+      const nextA1 = Number(document.getElementById('scheda-anno1').value) || 2025;
+      const nextA2 = Number(document.getElementById('scheda-anno2').value) || (nextA1 + 1);
+      appState.anno1 = nextA1;
+      appState.anno2 = nextA2;
+      if (prevA1 !== nextA1 || prevA2 !== nextA2) {
+        Object.keys(appState.records).forEach(key => {
+          const parts = key.split('_');
+          appState.records[key] = rebuildMonthDaysForYear(Number(parts[0]), Number(parts[1]), appState.records[key]);
+        });
+      }
+      emp.ferieAP = document.getElementById('scheda-ferie-ap').value;
+      emp.oreRecAP = document.getElementById('scheda-ore-rec').value;
+      emp.full = document.getElementById('scheda-nome').value;
+      emp.short = document.getElementById('scheda-short').value || emp.full.split(' ')[0];
+      emp.qualShort = document.getElementById('scheda-qual-short').value;
+      emp.qualFull = document.getElementById('scheda-qualifica').value;
+      emp.nomina = document.getElementById('scheda-nomina').value;
+      emp.plesso = document.getElementById('scheda-plesso').value;
+      emp.sabato = document.getElementById('scheda-sabato').value;
+      emp.rientri = document.getElementById('scheda-rientri').value;
+      emp.oreGg = document.getElementById('scheda-ore-gg').value;
+      emp.stdIn = document.getElementById('scheda-std-in').value;
+      emp.stdOut = document.getElementById('scheda-std-out').value;
+      saveState();
+    }
+
+    function resetSingleEmployeeRecords() {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      if (!emp) return;
+      
+      MONTHS_INFO.forEach(m => {
+        delete appState.records[`${currentEmpId}_${m.idx}`];
+      });
+      saveState();
+      
+    }
+
+    function openMonth(monthIdx) {
+      currentMonthIdx = monthIdx;
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      const mInfo = MONTHS_INFO.find(m => m.idx === monthIdx);
+      const year = Number(appState.anno1) + mInfo.yearOffset;
+      const key = `${currentEmpId}_${monthIdx}`;
+
+      if (!appState.records[key]) {
+        appState.records[key] = buildDefaultMonthRecords(currentEmpId, monthIdx, false);
+        saveState();
+      }
+
+      document.getElementById('reg-hdr-nome').textContent = emp.full;
+      document.getElementById('reg-hdr-qualifica').textContent = emp.qualFull;
+      document.getElementById('reg-hdr-plesso').textContent = emp.plesso;
+      document.getElementById('reg-hdr-nomina').textContent = emp.nomina;
+      document.getElementById('reg-hdr-anno').textContent = year;
+      document.getElementById('reg-hdr-mese').textContent = mInfo.name.toUpperCase();
+
+      renderSideMonths();
+      renderRegistroTable();
+      showView('registro');
+    }
+
+    function resetCurrentMonth() {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      const mInfo = MONTHS_INFO.find(m => m.idx === currentMonthIdx);
+      
+      const key = `${currentEmpId}_${currentMonthIdx}`;
+      appState.records[key] = buildDefaultMonthRecords(currentEmpId, currentMonthIdx, false);
+      saveState();
+      renderRegistroTable();
+    }
+
+    function applyStandardScheduleToMonth() {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      const key = `${currentEmpId}_${currentMonthIdx}`;
+      const rows = appState.records[key];
+      const sabLav = emp.sabato === 'SI';
+
+      rows.forEach(r => {
+        const isRest = (r.dowName === 'dom') || (r.dowName === 'sab' && !sabLav);
+        r.oreGg = isRest ? '00:00' : (emp.oreGg || '07:12');
+        r.assenza = isRest ? 'Riposo/festivo' : 'Lavoro';
+        r.inM = isRest ? '00:00' : (emp.stdIn || '07:30');
+        r.outM = isRest ? '00:00' : (emp.stdOut || '14:42');
+        r.inP = '00:00';
+        r.outP = '00:00';
+        r.permesso = '00:00';
+        r.straord = '00:00';
+      });
+      saveState();
+      renderRegistroTable();
+    }
+
+    function renderSideMonths() {
+      const classMap = {
+        8: 'm-set', 9: 'm-ott', 10: 'm-nov', 11: 'm-dic',
+        0: 'm-gen', 1: 'm-feb', 2: 'm-mar', 3: 'm-apr',
+        4: 'm-mag', 5: 'm-giu', 6: 'm-lug', 7: 'm-ago'
+      };
+      document.getElementById('reg-side-months').innerHTML = MONTHS_INFO.map(m => `
+        <button class="month-btn ${classMap[m.idx]} ${m.idx === currentMonthIdx ? 'active-month' : ''}"
+                onclick="openMonth(${m.idx})">${m.name}</button>
+      `).join('');
+    }
+
+    function renderRegistroTable() {
+      const key = `${currentEmpId}_${currentMonthIdx}`;
+      const rows = appState.records[key];
+
+      document.getElementById('reg-tbody').innerHTML = rows.map((r, i) => {
+        const calc = computeRowCalc(r);
+        let trClass = 'row-work';
+        if (r.assenza === 'Riposo/festivo') trClass = 'row-weekend';
+        else if (r.assenza !== 'Lavoro') trClass = 'row-other';
+
+        const optionsHtml = CAUSALI.map(c =>
+          `<option value="${c}" ${r.assenza === c ? 'selected' : ''}>${c}</option>`
+        ).join('');
+
+        return `
+          <tr class="${trClass}">
+            <td class="td-day">${r.day}</td>
+            <td class="td-day">${r.dowName}</td>
+            <td><input class="reg-input-time" value="${r.oreGg}" onchange="updateRegCell(${i}, 'oreGg', this.value)" /></td>
+            <td>
+              <select class="reg-select" onchange="updateRegCell(${i}, 'assenza', this.value)">
+                ${optionsHtml}
+              </select>
+            </td>
+            <td><input class="reg-input-time" value="${r.inM}" onchange="updateRegCell(${i}, 'inM', this.value)" /></td>
+            <td><input class="reg-input-time" value="${r.outM}" onchange="updateRegCell(${i}, 'outM', this.value)" /></td>
+            <td>${calc.lavM}</td>
+            <td><input class="reg-input-time" value="${r.inP}" onchange="updateRegCell(${i}, 'inP', this.value)" /></td>
+            <td><input class="reg-input-time" value="${r.outP}" onchange="updateRegCell(${i}, 'outP', this.value)" /></td>
+            <td>${calc.lavP}</td>
+            <td><input class="reg-input-time" value="${r.permesso}" onchange="updateRegCell(${i}, 'permesso', this.value)" /></td>
+            <td class="td-extra"><input class="reg-input-time" value="${r.straord}" onchange="updateRegCell(${i}, 'straord', this.value)" /></td>
+            <td style="font-weight:bold;">${calc.totLav}</td>
+            <td>${calc.saldoAtt}</td>
+            <td>${calc.saldoPass}</td>
+            <td style="font-size:10px;font-weight:bold;white-space:nowrap;">${r.gpsLog ? (r.gpsLat && r.gpsLon ? `<a href="${buildGoogleMapsUrl(r.gpsLat, r.gpsLon)}" target="_blank" rel="noopener noreferrer" title="Apri posizione timbratura su Google Maps" style="color:#1f4e78;text-decoration:underline;">${r.gpsLog} 🗺️</a>` : r.gpsLog) : ''}</td>
+          </tr>
+        `;
+      }).join('');
+
+      renderMonthCausaliSummary(rows);
+    }
+
+    function updateRegCell(rowIndex, field, val) {
+      const key = `${currentEmpId}_${currentMonthIdx}`;
+      appState.records[key][rowIndex][field] = val.trim();
+      saveState();
+      renderRegistroTable();
+    }
+
+    function renderMonthCausaliSummary(rows) {
+      const counts = {};
+      CAUSALI.forEach(c => counts[c] = 0);
+      let extraMins = 0;
+
+      rows.forEach(r => {
+        if (counts[r.assenza] !== undefined) counts[r.assenza]++;
+        extraMins += timeToMinutes(r.straord);
+      });
+
+      let html = `
+        <tr>
+          <td style="background:#bfbfbf;">Straordinario</td>
+          <td style="background:#fff;font-weight:bold;">${minutesToTime(extraMins)}</td>
+        </tr>
+      `;
+      CAUSALI.forEach(c => {
+        html += `<tr><td>${c}</td><td>${counts[c]}</td></tr>`;
+      });
+      document.getElementById('reg-causali-tbody').innerHTML = html;
+    }
+
+    function openRiepilogoModal() {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      document.getElementById('modal-emp-title').textContent = `📊 Riepilogo Annuale — ${emp.full} (${appState.anno1}/${appState.anno2})`;
+
+      const counts = {};
+      CAUSALI.forEach(c => counts[c] = 0);
+      let extraMins = 0;
+
+      MONTHS_INFO.forEach(m => {
+        const rows = appState.records[`${currentEmpId}_${m.idx}`];
+        if (rows) {
+          rows.forEach(r => {
+            if (counts[r.assenza] !== undefined) counts[r.assenza]++;
+            extraMins += timeToMinutes(r.straord);
+          });
+        }
+      });
+
+      let gridHtml = `<div class="modal-item"><span>Straordinario</span><span>${minutesToTime(extraMins)}</span></div>`;
+      CAUSALI.forEach(c => {
+        gridHtml += `<div class="modal-item"><span>${c}</span><span>${counts[c]} gg</span></div>`;
+      });
+      document.getElementById('modal-stats-grid').innerHTML = gridHtml;
+      document.getElementById('riepilogo-modal').classList.remove('hidden');
+    }
+
+    function closeRiepilogoModal() {
+      document.getElementById('riepilogo-modal').classList.add('hidden');
+    }
+
+    function exportCSV() {
+      const emp = appState.employees.find(e => e.id === currentEmpId);
+      if (!emp) return;
+      const mInfo = MONTHS_INFO.find(m => m.idx === currentMonthIdx);
+      const key = `${currentEmpId}_${currentMonthIdx}`;
+      if (!appState.records[key]) {
+        appState.records[key] = buildDefaultMonthRecords(currentEmpId, currentMonthIdx, false);
+      }
+      const rows = appState.records[key];
+      const header = ['Giorno', 'Settimana', 'Ore Giornaliere', 'Assenza', 'Entrata M', 'Uscita M', 'Lav Mattino', 'Entrata P', 'Uscita P', 'Lav Pom', 'Permesso', 'Straordinario', 'Totale Lavoro', 'Saldo Attivo', 'Saldo Passivo'];
+      const lines = [header.join(';')];
+      rows.forEach(r => {
+        const c = computeRowCalc(r);
+        lines.push([r.day, r.dowName, r.oreGg, r.assenza, r.inM, r.outM, c.lavM, r.inP, r.outP, c.lavP, r.permesso, r.straord, c.totLav, c.saldoAtt, c.saldoPass].join(';'));
+      });
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Presenze_${emp.short}_${mInfo.name}_${appState.anno1}_${appState.anno2}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportBackupJSON() {
+      const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Archivio_Presenze_ATA_${appState.anno1}_${appState.anno2}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!imported.employees || !imported.records) throw new Error('Formato non valido');
+          appState = imported;
+          saveState();
+          showView('indice');
+          alert(`Archivio Anno ${appState.anno1}/${appState.anno2} caricato correttamente!`);
+        } catch (err) {
+          alert('Errore durante il caricamento del file di backup.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    // Avvio
+    loadState();
+    initTabletSyncChannel();
+    checkUrlHashSync();
+    renderIndice();
+    if (navigator.geolocation && navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then(st => {
+        if (st.state === 'granted') {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              latestGpsFix = {
+                lat: pos.coords.latitude,
+                lon: pos.coords.longitude,
+                accuracy: Math.round(pos.coords.accuracy || 0),
+                ts: Date.now()
+              };
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 }
+          );
+        }
+      }).catch(() => {});
+    }
+  </script>
+</body>
+</html>
