@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Gestione Presenze Personale ATA - I.C. 2° Frosinone (v17)</title>
+<title>Gestione Presenze Personale ATA - I.C. 2° Frosinone (v18)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -544,7 +544,7 @@
 <!-- TOP NAVIGATION BAR -->
 <div class="topbar">
   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-    <h1>📋 Registro Presenze Personale ATA — Gestione Annuale (v17)</h1>
+    <h1>📋 Registro Presenze Personale ATA — Gestione Annuale (v18)</h1>
     <span class="sync-badge" id="syncStatusBadge" title="Aggancio automatico al plesso attivo">
       <span class="sync-dot"></span>
       <span id="syncStatusText">Auto-Plesso GPS Attivo</span>
@@ -828,8 +828,8 @@
 </div>
 
 <script>
-const STORAGE_KEY = "IC_FROSINONE2_ATA_PRESENZE_V17";
-const BROADCAST_CHANNEL_NAME = "IC_FROSINONE2_ATA_SYNC_V17";
+const STORAGE_KEY = "IC_FROSINONE2_ATA_PRESENZE_V18";
+const BROADCAST_CHANNEL_NAME = "IC_FROSINONE2_ATA_SYNC_V18";
 const broadcastChannel = ("BroadcastChannel" in window) ? new BroadcastChannel(BROADCAST_CHANNEL_NAME) : null;
 
 const PLESSI_LIST = [
@@ -1040,17 +1040,50 @@ function createInitialState() {
   };
 }
 
+function findLegacyEmployees() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k === STORAGE_KEY) continue;
+      if (k.includes("ATA") || k.includes("PRESENZE") || k.includes("FROSINONE")) {
+        const val = JSON.parse(localStorage.getItem(k));
+        if (val && Array.isArray(val.employees) && val.employees.length > 0) {
+          return val.employees;
+        }
+        if (val && val.data && Array.isArray(val.data.employees) && val.data.employees.length > 0) {
+          return val.data.employees;
+        }
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       const init = createInitialState();
+      const legacy = findLegacyEmployees();
+      if (legacy) {
+        init.employees = legacy;
+      }
       saveState(init, false);
       return init;
     }
     const parsed = JSON.parse(raw);
-    if (!parsed.employees || !Array.isArray(parsed.employees)) {
-      return createInitialState();
+    if (!parsed.employees || !Array.isArray(parsed.employees) || parsed.employees.length === 0) {
+      const init = createInitialState();
+      const legacy = findLegacyEmployees();
+      if (legacy) {
+        init.employees = legacy;
+      }
+      if (parsed && parsed.schoolYear) init.schoolYear = parsed.schoolYear;
+      if (parsed && parsed.plessiCoords) {
+        init.plessiCoords = { ...init.plessiCoords, ...parsed.plessiCoords };
+      }
+      saveState(init, false);
+      return init;
     }
     const mergedCoords = JSON.parse(JSON.stringify(DEFAULT_PLESSI_COORDS));
     if (parsed.plessiCoords && typeof parsed.plessiCoords === "object") {
@@ -1850,6 +1883,7 @@ function toggleAutoPunchWatcher() {
       const { latitude, longitude, accuracy } = pos.coords;
       const { matchedPlesso, nearestPlesso } = detectBestPlessoByCoords(latitude, longitude);
       const box = document.getElementById("gpsResultBox");
+      box.classList.remove("hidden");
       if (matchedPlesso) {
         box.className = "gps-status gps-ok";
         box.innerHTML =
@@ -2021,7 +2055,7 @@ function openPlessiModal() {
       </div>
       <input type="text" id="plesso_coord_${idx}" value="${coordStr}" placeholder="Lat, Lon o link Google Maps (es. 41.6396, 13.3426)" style="padding:5px; border:1px solid #8faadc; border-radius:2px; font-size:12px;" />
       <input type="number" id="plesso_rad_${idx}" value="${cfg.radius || 150}" min="20" max="5000" title="Raggio in metri" style="padding:5px; border:1px solid #8faadc; border-radius:2px; font-size:12px; text-align:center;" />
-      <button type="button" class="btn btn-sm btn-light" onclick="fillCurrentPosForPlesso(${idx}, '${name.replace(/'/g, "\'")}')">📍 Usa posizione</button>
+      <button type="button" class="btn btn-sm btn-light" onclick="fillCurrentPosForPlesso(${idx}, '${name.replace(/'/g, "\\'")}')">📍 Usa posizione</button>
     `;
     container.appendChild(row);
   });
@@ -2091,7 +2125,7 @@ function savePlessiCoords() {
 /* ==================== BACKUP, CSV, CONDIVISIONE & NUOVO ANNO ==================== */
 function exportBackupJson() {
   const payload = {
-    app: "IC_FROSINONE2_ATA_PRESENZE_V17",
+    app: "IC_FROSINONE2_ATA_PRESENZE_V18",
     exportedAt: new Date().toISOString(),
     data: state
   };
@@ -2162,8 +2196,7 @@ function exportCurrentMonthCsv() {
     rows.push(line.join(";"));
   });
 
-  const blob = new Blob(["﻿" + rows.join("
-")], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
